@@ -15,7 +15,7 @@ const SUSPECT_DECKS = [
     { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
     { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পুরানো পকেট ঘড়ির চেইন"] },
     { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের ভেতরের তলোয়ার", "ক্লোরোফর্ম ভেজা রুমাল", "ভারী কাঠের মূর্তি"] },
-    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার nylon সুতা"] },
+    { suspect: "...মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার nylon সুতা"] },
     { suspect: "কিরীটী ফলোয়ার", cards: ["আফিমের ওভারডোজ", "হাঁসের পালকের বিষাক্ত কলম", "লোহার হাতুড়ি"] }
 ];
 
@@ -30,11 +30,24 @@ io.on('connection', (socket) => {
             rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
         }
         
-        if (rooms[code].state !== 'lobby') {
-            return socket.emit('errorMsg', 'খেলা ইতিমধ্যে শুরু হয়ে গেছে!');
+        // If player already exists in room, reconnect them, else add new
+        let existingPlayer = rooms[code].players.find(p => p.username === username);
+        if (!existingPlayer) {
+            rooms[code].players.push({ 
+                id: socket.id, 
+                username, 
+                peerId, 
+                role: 'Suspect', 
+                cards: [], 
+                points: 0,
+                lastVoteKiller: null,
+                lastVoteCard: null
+            });
+        } else {
+            existingPlayer.id = socket.id;
+            existingPlayer.peerId = peerId;
         }
 
-        rooms[code].players.push({ id: socket.id, username, peerId, role: 'Suspect', cards: [] });
         socket.join(code);
         io.to(code).emit('roomUpdated', rooms[code]);
     });
@@ -56,6 +69,8 @@ io.on('connection', (socket) => {
         let deckIndex = 0;
 
         room.players.forEach(p => {
+            p.lastVoteKiller = null;
+            p.lastVoteCard = null;
             if (p.id === goyenda.id) {
                 p.role = 'Goyenda';
                 p.cards = [];
@@ -100,10 +115,34 @@ io.on('connection', (socket) => {
         if (!room) return;
 
         const killer = room.players.find(p => p.role === 'Killer');
+        const goyenda = room.players.find(p => p.role === 'Goyenda');
+        
+        // Check if the overall accusation (usually done by Goyenda or group) is correct
         const win = (accusedId === killer.id && accusedCard === room.killerCard);
 
-        io.to(code).emit('gameOver', { win, killer, killerCard: room.killerCard });
-        delete rooms[code];
+        // Update scores based on who won
+        room.players.forEach(p => {
+            if (win) {
+                if (p.role === 'Goyenda') p.points += 3; // Goyenda successfully caught the killer
+                if (p.role === 'Suspect') p.points += 2; // Innocent suspects win along with Goyenda
+            } else {
+                if (p.role === 'Killer') p.points += 3; // Killer successfully deceived everyone
+            }
+        });
+
+        // Sort players to see who is leading the total scoreboard
+        const sortedLeaderboard = [...room.players].sort((a,b) => b.points - a.points);
+
+        io.to(code).emit('gameOver', { 
+            win, 
+            killer, 
+            killerCard: room.killerCard, 
+            roomData: room,
+            leaderboard: sortedLeaderboard
+        });
+        
+        // We DO NOT delete the room anymore, so players can play next rounds and keep scores!
+        room.state = 'lobby'; 
     });
 
     socket.on('disconnect', () => {
@@ -119,4 +158,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Server running smoothly!`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running smoothly with scoreboards!`));
