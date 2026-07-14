@@ -1,106 +1,123 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server);
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-let rooms = {}; 
+let rooms = {};
 
-const ALL_CARDS = [
-    "Kitchen Knife", "Arsenic Poison", "Rope Strands", "Pillow", "Heavy Statue",
-    "Broken Wine Glass", "Old Revolver", "Sleeping Pills", "Insulin Syringe", "Iron Rod",
-    "Tainted Sweets", "Screwdriver", "Hammer", "Paper Cutter", "Kerosene Flask", 
-    "Gold Ring", "Torn Letter", "Bloodied Glove", "Muddy Shoe", "Security Keycard"
+// Specific unique card decks assigned to different suspects
+const SUSPECT_DECKS = [
+    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার সিগারেট"] },
+    { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পুরানো পকেট ঘড়ির চেইন"] },
+    { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের ভেতরের তলোয়ার", "ক্লোরোফর্ম ভেজা রুমাল", "ভারী কাঠের মূর্তি"] },
+    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার নাইলন সুতা"] },
+    { suspect: "কিরীটী ফলোয়ার", cards: ["আফিমের ওভারডোজ", "হাঁসের পালকের বিষাক্ত কলম", "লোহার হাতুড়ি"] }
 ];
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
 
 io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomCode, username }) => {
-        roomCode = roomCode.toUpperCase().trim();
-        socket.join(roomCode);
-        
-        if (!rooms[roomCode]) {
-            rooms[roomCode] = { 
-                code: roomCode, 
-                players: [], 
-                state: 'lobby', 
-                clues: null, 
-                killerCard: null 
-            };
+        const code = roomCode.toUpperCase();
+        if (!rooms[code]) {
+            rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
         }
         
-        if(!rooms[roomCode].players.some(p => p.id === socket.id)) {
-            rooms[roomCode].players.push({ id: socket.id, username, role: null, cards: [] });
+        if (rooms[code].state !== 'lobby') {
+            return socket.emit('errorMsg', 'খেলা ইতিমধ্যে শুরু হয়ে গেছে!');
         }
-        
-        socket.roomCode = roomCode;
-        io.to(roomCode).emit('roomUpdated', rooms[roomCode]);
+
+        rooms[code].players.push({ id: socket.id, username, role: 'Suspect', cards: [] });
+        socket.join(code);
+        io.to(code).emit('roomUpdated', rooms[code]);
     });
 
     socket.on('startGame', (roomCode) => {
-        let room = rooms[roomCode];
+        const code = roomCode.toUpperCase();
+        const room = rooms[code];
         if (!room || room.players.length < 3) return;
 
-        let deck = [...ALL_CARDS].sort(() => Math.random() - 0.5);
-        let roles = ['Goyenda', 'Killer'];
-        while (roles.length < room.players.length) {
-            roles.push('Suspect');
-        }
-        roles.sort(() => Math.random() - 0.5);
+        room.state = 'role_reveal';
+        room.clues = [];
+        room.killerCard = null;
 
-        room.players.forEach((player, idx) => {
-            player.role = roles[idx];
-            player.cards = [deck.pop(), deck.pop()];
+        let shuffledPlayers = shuffle([...room.players]);
+        let goyenda = shuffledPlayers[0];
+        let killer = shuffledPlayers[1];
+
+        let deckPool = shuffle([...SUSPECT_DECKS]);
+        let deckIndex = 0;
+
+        room.players.forEach(p => {
+            if (p.id === goyenda.id) {
+                p.role = 'Goyenda';
+                p.cards = [];
+                p.assignedSuspectName = "প্রধান গোয়েন্দা";
+            } else if (p.id === killer.id) {
+                p.role = 'Killer';
+                let currentDeck = deckPool[deckIndex++];
+                p.assignedSuspectName = currentDeck.suspect;
+                p.cards = [...currentDeck.cards];
+            } else {
+                p.role = 'Suspect';
+                let currentDeck = deckPool[deckIndex++];
+                p.assignedSuspectName = currentDeck.suspect;
+                p.cards = [...currentDeck.cards];
+            }
         });
 
-        room.state = 'role_reveal';
-        io.to(roomCode).emit('gameUpdated', room);
+        io.to(code).emit('gameUpdated', room);
     });
 
     socket.on('killerPickCard', ({ roomCode, card }) => {
-        let room = rooms[roomCode];
-        if (room) {
-            room.killerCard = card;
-            room.state = 'goyenda_clues';
-            io.to(roomCode).emit('gameUpdated', room);
+        const code = roomCode.toUpperCase();
+        if (rooms[code]) {
+            rooms[code].killerCard = card;
+            rooms[code].state = 'goyenda_clues';
+            io.to(code).emit('gameUpdated', rooms[code]);
         }
     });
 
     socket.on('submitClues', ({ roomCode, clues }) => {
-        let room = rooms[roomCode];
-        if (room) {
-            room.clues = clues;
-            room.state = 'investigation';
-            io.to(roomCode).emit('gameUpdated', room);
+        const code = roomCode.toUpperCase();
+        if (rooms[code]) {
+            rooms[code].clues = clues;
+            rooms[code].state = 'investigation';
+            io.to(code).emit('gameUpdated', rooms[code]);
         }
     });
 
     socket.on('submitAccusation', ({ roomCode, accusedId, accusedCard }) => {
-        let room = rooms[roomCode];
+        const code = roomCode.toUpperCase();
+        const room = rooms[code];
         if (!room) return;
 
-        let killer = room.players.find(p => p.role === 'Killer');
-        let win = (accusedId === killer.id && accusedCard === room.killerCard);
+        const killer = room.players.find(p => p.role === 'Killer');
+        const win = (accusedId === killer.id && accusedCard === room.killerCard);
 
-        room.state = 'game_over';
-        io.to(roomCode).emit('gameOver', { win, killer, killerCard: room.killerCard, accusedId, accusedCard });
+        io.to(code).emit('gameOver', { win, killer, killerCard: room.killerCard });
+        delete rooms[code];
     });
 
     socket.on('disconnect', () => {
-        let roomCode = socket.roomCode;
-        if (rooms[roomCode]) {
-            rooms[roomCode].players = rooms[roomCode].players.filter(p => p.id !== socket.id);
-            if (rooms[roomCode].players.length === 0) {
-                delete rooms[roomCode];
+        for (let code in rooms) {
+            rooms[code].players = rooms[code].players.filter(p => p.id !== socket.id);
+            if (rooms[code].players.length === 0) {
+                delete rooms[code];
             } else {
-                io.to(roomCode).emit('roomUpdated', rooms[roomCode]);
+                io.to(code).emit('roomUpdated', rooms[code]);
             }
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Goyendagiri running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server setup live on port ${PORT}`));
