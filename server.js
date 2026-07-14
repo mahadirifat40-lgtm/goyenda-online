@@ -2,26 +2,95 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const Datastore = require('nedb-promises');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-let rooms = {};
+// ডেটাবেস ফাইল তৈরি (ফাইল হিসেবে সেভ থাকবে)
+const db = Datastore.create({ filename: path.join(__dirname, 'users.db'), autoload: true });
 
+// একটি ডিফল্ট এডমিন অ্যাকাউন্ট তৈরি (যদি না থাকে)
+async function initAdmin() {
+    const adminExists = await db.findOne({ username: 'admin' });
+    if (!adminExists) {
+        const hashedPassword = await bcrypt.hash('admin1234', 10);
+        await db.insert({ username: 'admin', password: hashedPassword, role: 'admin', points: 0 });
+        console.log("Default Admin Created -> User: admin | Pass: admin1234");
+    }
+}
+initAdmin();
+
+// --- API Routes (Authentication) ---
+
+// রেজিস্ট্রেশন API
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) return res.status(400).json({ error: 'সবগুলো ঘর পূরণ করুন!' });
+        
+        const userExists = await db.findOne({ username: username.toLowerCase() });
+        if (userExists) return res.status(400).json({ error: 'এই ইউজারনেমটি ইতিমধ্যে নেওয়া হয়েছে!' });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.insert({ username: username.toLowerCase(), password: hashedPassword, role: 'player', points: 0 });
+        res.json({ success: true, message: 'রেজিস্ট্রেশন সফল হয়েছে!' });
+    } catch (err) {
+        res.status(500).json({ error: 'সার্ভার সমস্যা!' });
+    }
+});
+
+// লগইন API
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await db.findOne({ username: username.toLowerCase() });
+        if (!user) return res.status(400).json({ error: 'ইউজার পাওয়া যায়নি!' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ error: 'ভুল পাসওয়ার্ড!' });
+
+        res.json({ success: true, username: user.username, role: user.role, points: user.points });
+    } catch (err) {
+        res.status(500).json({ error: 'সার্ভার সমস্যা!' });
+    }
+});
+
+// এডমিন প্যানেল API (সব ইউজারের লিস্ট দেখতে)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const users = await db.find({}, { password: 0 }); // পাসওয়ার্ড ছাড়া সব ডেটা আনবে
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'ডেটা আনা সম্ভব হয়নি!' });
+    }
+});
+
+// এডমিন দ্বারা ইউজার ডিলিট API
+app.delete('/api/admin/users/:id', async (req, res) => {
+    try {
+        await db.remove({ _id: req.params.id });
+        res.json({ success: true, message: 'ইউজার ডিলিট করা হয়েছে।' });
+    } catch (err) {
+        res.status(500).json({ error: 'ডিলিট করা যায়নি!' });
+    }
+});
+
+// --- GAME LOGIC (SOCKET.IO) ---
+let rooms = {};
 const SUSPECT_DECKS = [
-    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
-    { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পুরানো পকেট ঘড়ির চেইন"] },
-    { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের ভেতরের তলোয়ার", "ক্লোরোফর্ম ভেজা রুমাল", "ভারী কাঠের মূর্তি"] },
-    { suspect: "...মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার nylon সুতা"] },
-    { suspect: "কিরীটী ফলোয়ার", cards: ["আফিমের ওভারডোজ", "হাঁসের পালকের বিষাক্ত কলম", "লোহার হাতুড়ি"] }
+    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
+    { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পকেট ঘড়ির চেইন"] },
+    { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের তলোয়ার", "ক্লোরোফর্ম রুমাল", "ভারী কাঠের মূর্তি"] },
+    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার রিভলভার", "বিষাক্ত লেজার পেন", "নাইলন সুতা"] }
 ];
 
-function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
-}
+function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
 io.on('connection', (socket) => {
     socket.on('joinRoom', ({ roomCode, username, peerId }) => {
@@ -30,18 +99,10 @@ io.on('connection', (socket) => {
             rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
         }
         
-        // If player already exists in room, reconnect them, else add new
         let existingPlayer = rooms[code].players.find(p => p.username === username);
         if (!existingPlayer) {
             rooms[code].players.push({ 
-                id: socket.id, 
-                username, 
-                peerId, 
-                role: 'Suspect', 
-                cards: [], 
-                points: 0,
-                lastVoteKiller: null,
-                lastVoteCard: null
+                id: socket.id, username, peerId, role: 'Suspect', cards: [], points: 0 
             });
         } else {
             existingPlayer.id = socket.id;
@@ -64,30 +125,24 @@ io.on('connection', (socket) => {
         let shuffledPlayers = shuffle([...room.players]);
         let goyenda = shuffledPlayers[0];
         let killer = shuffledPlayers[1];
-
         let deckPool = shuffle([...SUSPECT_DECKS]);
         let deckIndex = 0;
 
         room.players.forEach(p => {
-            p.lastVoteKiller = null;
-            p.lastVoteCard = null;
             if (p.id === goyenda.id) {
-                p.role = 'Goyenda';
-                p.cards = [];
-                p.assignedSuspectName = "প্রধান গোয়েন্দা";
+                p.role = 'Goyenda'; p.cards = []; p.assignedSuspectName = "প্রধান গোয়েন্দা";
             } else if (p.id === killer.id) {
                 p.role = 'Killer';
-                let currentDeck = deckPool[deckIndex++];
-                p.assignedSuspectName = currentDeck.suspect;
-                p.cards = [...currentDeck.cards];
+                let deck = deckPool[deckIndex++];
+                p.assignedSuspectName = deck ? deck.suspect : "সন্দেহভাজন";
+                p.cards = deck ? [...deck.cards] : ["ছুরি", "দড়ি", "বিষ"];
             } else {
                 p.role = 'Suspect';
-                let currentDeck = deckPool[deckIndex++];
-                p.assignedSuspectName = currentDeck.suspect;
-                p.cards = [...currentDeck.cards];
+                let deck = deckPool[deckIndex++];
+                p.assignedSuspectName = deck ? deck.suspect : "সন্দেহভাজন";
+                p.cards = deck ? [...deck.cards] : ["ছুরি", "দড়ি", "বিষ"];
             }
         });
-
         io.to(code).emit('gameUpdated', room);
     });
 
@@ -109,53 +164,41 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('submitAccusation', ({ roomCode, accusedId, accusedCard }) => {
+    socket.on('submitAccusation', async ({ roomCode, accusedId, accusedCard }) => {
         const code = roomCode.toUpperCase();
         const room = rooms[code];
         if (!room) return;
 
         const killer = room.players.find(p => p.role === 'Killer');
-        const goyenda = room.players.find(p => p.role === 'Goyenda');
-        
-        // Check if the overall accusation (usually done by Goyenda or group) is correct
         const win = (accusedId === killer.id && accusedCard === room.killerCard);
 
-        // Update scores based on who won
-        room.players.forEach(p => {
+        // ডেটাবেসে পয়েন্ট সেভ করার লজিক
+        for (let p of room.players) {
+            let ptsToAdd = 0;
             if (win) {
-                if (p.role === 'Goyenda') p.points += 3; // Goyenda successfully caught the killer
-                if (p.role === 'Suspect') p.points += 2; // Innocent suspects win along with Goyenda
+                if (p.role === 'Goyenda') ptsToAdd = 3;
+                if (p.role === 'Suspect') ptsToAdd = 2;
             } else {
-                if (p.role === 'Killer') p.points += 3; // Killer successfully deceived everyone
+                if (p.role === 'Killer') ptsToAdd = 3;
             }
-        });
+            p.points += ptsToAdd;
+            // ডেটাবেস আপডেট
+            await db.update({ username: p.username.toLowerCase() }, { $inc: { points: ptsToAdd } });
+        }
 
-        // Sort players to see who is leading the total scoreboard
         const sortedLeaderboard = [...room.players].sort((a,b) => b.points - a.points);
-
-        io.to(code).emit('gameOver', { 
-            win, 
-            killer, 
-            killerCard: room.killerCard, 
-            roomData: room,
-            leaderboard: sortedLeaderboard
-        });
-        
-        // We DO NOT delete the room anymore, so players can play next rounds and keep scores!
+        io.to(code).emit('gameOver', { win, killer, killerCard: room.killerCard, roomData: room, leaderboard: sortedLeaderboard });
         room.state = 'lobby'; 
     });
 
     socket.on('disconnect', () => {
         for (let code in rooms) {
             rooms[code].players = rooms[code].players.filter(p => p.id !== socket.id);
-            if (rooms[code].players.length === 0) {
-                delete rooms[code];
-            } else {
-                io.to(code).emit('roomUpdated', rooms[code]);
-            }
+            if (rooms[code].players.length === 0) delete rooms[code];
+            else io.to(code).emit('roomUpdated', rooms[code]);
         }
     });
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Server running smoothly with scoreboards!`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Professional Auth & Admin Server Live!`));
