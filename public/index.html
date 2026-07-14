@@ -13,6 +13,7 @@
             --detective-blue: #0088ff;
             --text-glow: #f7fafc;
             --muted-gray: #a0aec0;
+            --voice-green: #28a745;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
@@ -75,6 +76,29 @@
         .btn-secondary { background: linear-gradient(135deg, #4a5568, #2d3748); box-shadow: none; }
         .btn-secondary:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
+        /* Voice Panel Component */
+        .voice-card {
+            background: rgba(20, 24, 33, 0.9);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .voice-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .voice-btn.active { background: var(--voice-green); }
+
         .input-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: var(--accent-gold); font-weight: 600; font-size: 0.95rem;}
         input, select { 
@@ -86,9 +110,7 @@
             color: white; 
             margin-bottom: 15px; 
             font-size: 1rem;
-            transition: border-color 0.3s;
         }
-        input:focus, select:focus { border-color: var(--accent-gold); outline: none; }
 
         .reveal-box { 
             background: rgba(255, 51, 68, 0.1); 
@@ -98,11 +120,8 @@
             text-align: center; 
             margin: 25px 0; 
             font-weight: bold; 
-            font-size: 1.2rem;
             cursor: pointer; 
-            transition: background 0.3s;
         }
-        .reveal-box:hover { background: rgba(255, 51, 68, 0.18); }
 
         .card-option { 
             background: rgba(255,255,255,0.05); 
@@ -112,11 +131,9 @@
             margin-bottom: 12px; 
             cursor: pointer; 
             font-weight: bold; 
-            font-size: 1.05rem;
             border: 1px solid rgba(255,255,255,0.1); 
-            transition: all 0.2s;
         }
-        .card-option:hover { background: var(--accent-crimson); border-color: transparent; color: white; transform: scale(1.02); }
+        .card-option:hover { background: var(--accent-crimson); color: white; }
 
         .clue-container { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;}
         .clue-tag { 
@@ -124,7 +141,6 @@
             padding: 12px 16px; 
             border-radius: 8px; 
             border-left: 5px solid var(--detective-blue); 
-            font-size: 1.05rem;
         }
         
         .suspect-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
@@ -134,21 +150,32 @@
             border-radius: 10px; 
             border: 1px solid rgba(255,255,255,0.05); 
         }
-        .suspect-title { color: var(--accent-gold); font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between;}
+        .suspect-title { color: var(--accent-gold); font-weight: bold; display: flex; justify-content: space-between;}
         .hand-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-        .hand-card { padding: 10px 5px; background: rgba(20, 24, 33, 0.9); border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; }
+        .hand-card { padding: 10px 5px; background: rgba(20, 24, 33, 0.9); border-radius: 6px; text-align: center; font-size: 0.85rem; font-weight: bold; color: #e2e8f0; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
+    <!-- PeerJS for WebRTC Voice Calls -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 </head>
 <body>
 
 <div class="game-container">
     <h1>গোয়েন্দাগিরি অনলাইন</h1>
 
+    <!-- GLOBAL VOICE CONTROLLER (Hidden in Lobby Join) -->
+    <div id="voice-panel" class="voice-card" style="display: none;">
+        <div>
+            <span style="font-weight: bold; color: var(--accent-gold);">🎙️ আলোচনা কক্ষ (Voice Room)</span>
+            <p id="voice-status" style="font-size: 0.85rem; color: var(--muted-gray);">মাইক্রোফোন বন্ধ</p>
+        </div>
+        <button id="btn-toggle-mic" class="voice-btn">মাইক অন করুন</button>
+    </div>
+
     <!-- SCREEN 1: LOBBY JOIN -->
     <div id="screen-lobby-join" class="screen active">
         <div class="input-group">
-            <label>রুম কোড (তৈরি করুন অথবা যুক্ত হোন)</label>
+            <label>রুম কোড</label>
             <input type="text" id="room-input" placeholder="উদা: FELUDA">
             <label>আপনার নাম</label>
             <input type="text" id="name-input" placeholder="উদা: ফেলুদা">
@@ -159,7 +186,7 @@
     <!-- SCREEN 2: WAITING LOBBY -->
     <div id="screen-lobby-wait" class="screen">
         <h3>রুম কোড: <span id="display-room-code" style="color:var(--accent-gold)"></span></h3>
-        <p style="color: var(--muted-gray); margin: 12px 0; font-style: italic;">অন্যান্য গোয়েন্দা ও সন্দেহভাজনদের জন্য অপেক্ষা করা হচ্ছে (নূন্যতম ৩ জন)...</p>
+        <p style="color: var(--muted-gray); margin: 12px 0; font-style: italic;">অন্যান্য প্লেয়ারদের জন্য অপেক্ষা করা হচ্ছে (নূন্যতম ৩ জন)...</p>
         <div id="lobby-player-list" style="margin: 20px 0;"></div>
         <button class="btn" id="btn-start" style="display:none;">খেলা শুরু করুন 🚀</button>
     </div>
@@ -170,9 +197,9 @@
         <div id="secret-content" style="display:none; text-align:center;">
             <h2 id="my-role" style="margin-bottom: 12px; font-size: 1.8rem;"></h2>
             <h4 id="my-suspect-name" style="color: var(--accent-gold); margin-bottom: 10px;"></h4>
-            <p id="my-instruction" style="color: var(--muted-gray); margin-bottom: 20px; line-height: 1.5;"></p>
+            <p id="my-instruction" style="color: var(--muted-gray); margin-bottom: 20px;"></p>
             <div id="killer-selection-zone" style="display:none;">
-                <p style="margin-bottom:12px; font-weight:bold; color: white;">হত্যাকাণ্ডটি সম্পন্ন করতে আপনার যেকোনো ১টি অপরাধের কার্ড বেছে নিন:</p>
+                <p style="margin-bottom:12px; font-weight:bold;">হাতিয়ার কার্ড বেছে নিন:</p>
                 <div id="killer-cards-options"></div>
             </div>
         </div>
@@ -181,14 +208,12 @@
     <!-- SCREEN 4: GOYENDA DASHBOARD -->
     <div id="screen-goyenda" class="screen">
         <h3 style="color:var(--detective-blue); margin-bottom: 10px;">🔍 গোয়েন্দা ইন্টেল ড্যাশবোর্ড</h3>
-        <p style="margin-bottom: 20px; font-size: 1.05rem;">প্রকৃত খুনি হলো: <strong id="intel-killer" style="color:var(--accent-crimson)"></strong>। সে ব্যবহার করেছে: <strong id="intel-card" style="color:var(--accent-gold)"></strong>।</p>
+        <p style="margin-bottom: 20px;">খুনি: <strong id="intel-killer" style="color:var(--accent-crimson)"></strong>। হাতিয়ার: <strong id="intel-card" style="color:var(--accent-gold)"></strong>।</p>
         
         <label>হত্যাকাণ্ডের স্থান (Location)</label>
-        <select id="clue-1"><option>ড্রয়িং রুম</option><option>পরিত্যক্ত গুদামঘর</option><option>অন্ধকার গলি</option><option>পুরানো লাইব্রেরি</option></select>
-        
+        <select id="clue-1"><option>ড্রয়িং রুম</option><option>পরিত্যক্ত গুদামঘর</option><option>অন্ধکار গলি</option><option>পুরানো লাইব্রেরি</option></select>
         <label>মৃত্যুর কারণ (Cause of Death)</label>
         <select id="clue-2"><option>ধারালো অস্ত্রের আঘাত</option><option>শ্বাসরোধ</option><option>বিষপ্রয়োগ</option><option>অতিরিক্ত রক্তক্ষরণ</option></select>
-        
         <label>ঘটনাস্থলের অবস্থা (State of Scene)</label>
         <select id="clue-3"><option>ধস্তাধস্তির চিহ্ন</option><option>ছাই ও পোড়া দাগ</option><option>একদম পরিষ্কার গোছানো</option><option>অগোছালো রক্তের ছিট ফোঁটা</option></select>
         
@@ -199,17 +224,14 @@
     <div id="screen-investigation" class="screen">
         <h3 style="color: var(--accent-gold); margin-bottom: 12px;">🕵️‍♂️ ল্যাব ফরেনসিক আলামত (Clues)</h3>
         <div id="live-clues-box" class="clue-container"></div>
-        
-        <h3 style="margin-bottom: 12px;">👥 সন্দেহভাজনদের প্রোফাইল ও ফাইলপত্র</h3>
+        <h3 style="margin-bottom: 12px;">👥 সন্দেহভাজনদের ফাইলপত্র</h3>
         <div id="live-board-box" class="suspect-grid"></div>
-        
-        <button class="btn" id="btn-go-vote">চূড়ান্ত রায় ও ভোট দিতে যান ⚖️</button>
+        <button class="btn" id="btn-go-vote">চূড়ান্ত রায় ও vote দিতে যান ⚖️</button>
     </div>
 
     <!-- SCREEN 6: VOTING -->
     <div id="screen-voting" class="screen">
         <h3>আসামি শনাক্তকরণ ও চূড়ান্ত ভোট</h3>
-        <p style="color: var(--muted-gray); margin: 8px 0 20px 0;">সঠিক খুনি এবং তার ব্যবহৃত নির্দিষ্ট কার্ডটি সিলেক্ট করুন।</p>
         <label>খুনি কে?</label>
         <select id="vote-killer-select"></select>
         <label>কোনটি অপরাধের হাতিয়ার কার্ড ছিল?</label>
@@ -220,7 +242,7 @@
     <!-- SCREEN 7: END GAME -->
     <div id="screen-game-over" class="screen" style="text-align:center;">
         <h2 id="end-title" style="margin-bottom:20px; font-size: 2.2rem;"></h2>
-        <div id="end-details" style="background:rgba(0,0,0,0.4); padding:20px; border-radius:10px; text-align:left; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);"></div>
+        <div id="end-details" style="background:rgba(0,0,0,0.4); padding:20px; border-radius:10px; text-align:left; margin-bottom: 20px;"></div>
         <button class="btn btn-secondary" onclick="location.reload()">মূল মেনুতে ফিরে যান</button>
     </div>
 </div>
@@ -228,19 +250,80 @@
 <script>
     const socket = io();
     let currentRoom = null;
+    let localStream = null;
+    let myPeerId = null;
+    let peer = null;
+    let isMuted = true;
+    let roomPlayersGlobal = [];
+
+    // Initialize PeerJS for Voice Setup
+    peer = new Peer(undefined, { host: '/', port: '443', secure: true });
+    peer.on('open', id => { myPeerId = id; });
 
     document.getElementById('btn-join').addEventListener('click', () => {
         const roomCode = document.getElementById('room-input').value;
         const username = document.getElementById('name-input').value;
-        if(roomCode && username) {
+        if(roomCode && username && myPeerId) {
             currentRoom = roomCode.toUpperCase();
-            socket.emit('joinRoom', { roomCode, username });
+            socket.emit('joinRoom', { roomCode, username, peerId: myPeerId });
             switchScreen('screen-lobby-wait');
+            document.getElementById('voice-panel').style.display = 'flex';
+            setupVoiceEngine();
+        }
+    });
+
+    // Voice Calling Core Logic via WebRTC
+    async function setupVoiceEngine() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            // Keep local stream muted initially until button click
+            localStream.getAudioTracks()[0].enabled = false;
+        } catch (err) {
+            console.error("Microphone access denied:", err);
+            document.getElementById('voice-status').innerText = "মাইক পারমিশন পাওয়া যায়নি!";
+        }
+
+        // Listening for incoming audio calls
+        peer.on('call', call => {
+            call.answer(localStream);
+            const audio = document.createElement('audio');
+            call.on('stream', remoteStream => {
+                audio.srcObject = remoteStream;
+                audio.play();
+            });
+        });
+    }
+
+    // Manual Mic Button Switcher (Turn On / Off)
+    document.getElementById('btn-toggle-mic').addEventListener('click', () => {
+        if (!localStream) return;
+        isMuted = !isMuted;
+        localStream.getAudioTracks()[0].enabled = !isMuted;
+
+        const micBtn = document.getElementById('btn-toggle-mic');
+        const statusText = document.getElementById('voice-status');
+
+        if(isMuted) {
+            micBtn.innerText = "মাইক অন করুন";
+            micBtn.classList.remove('active');
+            statusText.innerText = "মাইক্রোফোন বন্ধ";
+        } else {
+            micBtn.innerText = "মাইক অফ করুন";
+            micBtn.classList.add('active');
+            statusText.innerText = "🎙️ আপনি কথা বলছেন...";
+            
+            // Connect calls to all online players in room dynamically
+            roomPlayersGlobal.forEach(user => {
+                if (user.peerId !== myPeerId) {
+                    peer.call(user.peerId, localStream);
+                }
+            });
         }
     });
 
     socket.on('roomUpdated', (room) => {
         document.getElementById('display-room-code').innerText = room.code;
+        roomPlayersGlobal = room.players;
         const list = document.getElementById('lobby-player-list');
         list.innerHTML = room.players.map(p => `<div style="padding:12px; background:rgba(255,255,255,0.05); margin-bottom:8px; border-radius:6px; font-weight:600;">👤 ${p.username}</div>`).join('');
         
@@ -255,6 +338,7 @@
 
     socket.on('gameUpdated', (room) => {
         const me = room.players.find(p => p.id === socket.id);
+        roomPlayersGlobal = room.players;
         
         if (room.state === 'role_reveal') {
             switchScreen('screen-reveal');
@@ -286,18 +370,17 @@
 
     function setupRevealScreen(me) {
         const roleEl = document.getElementById('my-role');
-        
         if(me.role === 'Goyenda') {
             roleEl.innerText = '🔍 আপনি প্রধান গোয়েন্দা';
             roleEl.style.color = 'var(--detective-blue)';
             document.getElementById('my-suspect-name').innerText = '';
-            document.getElementById('my-instruction').innerText = "আপনি সত্যের সন্ধানী। খুনি তার অপরাধের কার্ড বেছে নেওয়ার পর আপনার কাছে গোয়েন্দা প্যানেল আসবে।";
+            document.getElementById('my-instruction').innerText = "আপনি সত্যের সন্ধানী। খুনি অপরাধের কার্ড বাছার পর আপনার গোয়েন্দা প্যানেল আসবে।";
             document.getElementById('killer-selection-zone').style.display = 'none';
         } else if (me.role === 'Killer') {
             roleEl.innerText = '🔪 আপনি খুনি (Killer)';
             roleEl.style.color = 'var(--accent-crimson)';
             document.getElementById('my-suspect-name').innerText = `ছদ্মবেশ: ${me.assignedSuspectName}`;
-            document.getElementById('my-instruction').innerText = "সাবধান! গোয়েন্দা যেন বুঝতে না পারে যে অপরাধের পেছনে আপনার হাত রয়েছে।";
+            document.getElementById('my-instruction').innerText = "গোয়েন্দা যেন বুঝতে না পারে যে অপরাধের পেছনে আপনার হাত রয়েছে।";
             const container = document.getElementById('killer-selection-zone');
             const options = document.getElementById('killer-cards-options');
             container.style.display = 'block';
@@ -306,12 +389,9 @@
             roleEl.innerText = '👤 আপনি একজন সন্দেহভাজন';
             roleEl.style.color = '#fff';
             document.getElementById('my-suspect-name').innerText = `চরিত্র: ${me.assignedSuspectName}`;
-            document.getElementById('my-instruction').innerText = "টেবিলের উপর আপনার নিজস্ব ৩টি আলামত কার্ড উন্মুক্ত রয়েছে। গোয়েন্দার দেওয়া ক্লু মিলিয়ে আলোচনা করুন ও প্রকৃত খুনিকে খুঁজুন।";
+            document.getElementById('my-instruction').innerText = "টেবিলের উপর আপনার কার্ড উন্মুক্ত রয়েছে। আলামত মিলিয়ে খুনিকে খুঁজুন।";
             document.getElementById('killer-selection-zone').style.display = 'none';
         }
-        secretVisible = false;
-        document.getElementById('secret-content').style.display = 'none';
-        document.getElementById('reveal-box').innerText = "আপনার গোপন পরিচয় দেখতে এখানে ট্যাপ করুন";
     }
 
     window.killerPick = function(card) {
@@ -368,15 +448,15 @@
     });
 
     socket.on('gameOver', ({ win, killer, killerCard }) => {
+        if(localStream) { localStream.getAudioTracks()[0].enabled = false; } // Mute all on gameover
         switchScreen('screen-game-over');
         const title = document.getElementById('end-title');
         title.innerText = win ? "🏆 গোয়েন্দা জিতেছে!" : "💀 খুনি পালিয়ে গেছে!";
         title.style.color = win ? "#48bb78" : "var(--accent-crimson)";
         
         document.getElementById('end-details').innerHTML = `
-            <p style="margin-bottom:8px; font-size:1.1rem;"><strong>প্রকৃত খুনি:</strong> ${killer.username}</p>
-            <p style="margin-bottom:8px; font-size:1.1rem;"><strong>ছদ্মবেশ পরিচয়:</strong> ${killer.assignedSuspectName}</p>
-            <p style="font-size:1.1rem;"><strong>ব্যবহৃত গোপন হাতিয়ার:</strong> <span style="color:var(--accent-gold); font-weight:bold;">${killerCard}</span></p>
+            <p><strong>প্রকৃত খুনি:</strong> ${killer.username} [${killer.assignedSuspectName}]</p>
+            <p style="margin-top:5px;"><strong>ব্যবহৃত হাতিয়ার:</strong> <span style="color:var(--accent-gold);">${killerCard}</span></p>
         `;
     });
 
