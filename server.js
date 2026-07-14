@@ -12,10 +12,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 let rooms = {};
 
 const SUSPECT_DECKS = [
-    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারمিনার সিগারেট"] },
+    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
     { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পুরানো পকেট ঘড়ির চেইন"] },
     { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের ভেতরের তলোয়ার", "ক্লোরোফর্ম ভেজা রুমাল", "ভারী কাঠের মূর্তি"] },
-    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার নাইলন সুতা"] },
+    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার nylon সুতা"] },
     { suspect: "কিরীটী ফলোয়ার", cards: ["আফিমের ওভারডোজ", "হাঁসের পালকের বিষাক্ত কলম", "লোহার হাতুড়ি"] }
 ];
 
@@ -118,5 +118,5 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running smoothly!`));
