@@ -11,9 +11,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
-// Specific unique card decks assigned to different suspects
 const SUSPECT_DECKS = [
-    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার সিগারেট"] },
+    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "পড়ালেখা টেবিল ল্যাম্পের তার", "বিষাক্ত চারمিনার সিগারেট"] },
     { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পুরানো পকেট ঘড়ির চেইন"] },
     { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের ভেতরের তলোয়ার", "ক্লোরোফর্ম ভেজা রুমাল", "ভারী কাঠের মূর্তি"] },
     { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার যুক্ত রিভলভার", "বিষাক্ত লেজার পেন", "গলা কাটার নাইলন সুতা"] },
@@ -25,7 +24,7 @@ function shuffle(array) {
 }
 
 io.on('connection', (socket) => {
-    socket.on('joinRoom', ({ roomCode, username }) => {
+    socket.on('joinRoom', ({ roomCode, username, peerId }) => {
         const code = roomCode.toUpperCase();
         if (!rooms[code]) {
             rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
@@ -35,7 +34,7 @@ io.on('connection', (socket) => {
             return socket.emit('errorMsg', 'খেলা ইতিমধ্যে শুরু হয়ে গেছে!');
         }
 
-        rooms[code].players.push({ id: socket.id, username, role: 'Suspect', cards: [] });
+        rooms[code].players.push({ id: socket.id, username, peerId, role: 'Suspect', cards: [] });
         socket.join(code);
         io.to(code).emit('roomUpdated', rooms[code]);
     });
@@ -120,4 +119,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server setup live on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
