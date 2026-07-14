@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goyendagiri Online</title>
+    <style>
+        :root { --bg-color: #121214; --card-bg: #1e1e24; --accent: #e53e3e; --text-main: #f7fafc; --text-muted: #a0aec0; --detective-blue: #3182ce; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; padding: 20px; }
+        .game-container { width: 100%; max-width: 600px; background-color: var(--card-bg); border-radius: 12px; padding: 25px; border: 1px solid #2d3748; }
+        h1 { text-align: center; color: var(--accent); margin-bottom: 20px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .btn { background-color: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; font-size: 1rem;}
+        .btn-secondary { background-color: #4a5568; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); }
+        input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #4a5568; background-color: #2d3748; color: white; margin-bottom: 10px; font-size: 1rem;}
+        .reveal-box { background: #2d3748; border: 2px dashed var(--accent); border-radius: 8px; padding: 25px; text-align: center; margin: 20px 0; font-weight: bold; cursor: pointer; }
+        .card-option { background: #2d3748; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 10px; cursor: pointer; font-weight: bold; border: 2px solid transparent; }
+        .card-option:hover { border-color: var(--text-muted); }
+        .clue-tag { background: #2b6cb0; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 5px solid #90cdf4; }
+        .player-hand-display { background: #1a202c; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .hand-cards { display: flex; gap: 10px; margin-top: 8px; }
+        .hand-card { flex: 1; padding: 10px; background: #2d3748; border-radius: 6px; text-align: center; font-weight: bold; }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Goyendagiri Online</h1>
+
+    <!-- SCREEN 1: JOIN LOBBY -->
+    <div id="screen-lobby-join" class="screen active">
+        <div class="input-group">
+            <label>Room Code (Create or Join)</label>
+            <input type="text" id="room-input" placeholder="e.g. SHERLOCK">
+            <label>Your Name</label>
+            <input type="text" id="name-input" placeholder="e.g. Feluda">
+        </div>
+        <button class="btn" id="btn-join">Enter Room</button>
+    </div>
+
+    <!-- SCREEN 2: WAITING LOBBY -->
+    <div id="screen-lobby-wait" class="screen">
+        <h3>Room: <span id="display-room-code" style="color:var(--accent)"></span></h3>
+        <p style="color: var(--text-muted); margin: 10px 0;">Waiting for players (Min 3)...</p>
+        <div id="lobby-player-list" style="margin: 15px 0;"></div>
+        <button class="btn" id="btn-start" style="display:none;">Start Game</button>
+    </div>
+
+    <!-- SCREEN 3: ROLE REVEAL -->
+    <div id="screen-reveal" class="screen">
+        <div class="reveal-box" id="reveal-box" onclick="toggleSecret()">Tap to Look At Your Secret Identity</div>
+        <div id="secret-content" style="display:none; text-align:center;">
+            <h2 id="my-role" style="color: var(--accent); margin-bottom: 10px;"></h2>
+            <p id="my-instruction" style="color: var(--text-muted); margin-bottom: 15px;"></p>
+            <div id="killer-selection-zone" style="display:none;">
+                <p style="margin-bottom:10px; font-weight:bold;">Pick your Weapon Card:</p>
+                <div id="killer-cards-options"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: GOYENDA DASHBOARD -->
+    <div id="screen-goyenda" class="screen">
+        <h3 style="color:var(--detective-blue)">Goyenda Intel Dashboard</h3>
+        <p style="margin: 10px 0;">The Killer is <strong id="intel-killer" style="color:var(--accent)"></strong>. They used <strong id="intel-card" style="color:var(--accent)"></strong>.</p>
+        
+        <label>Location</label>
+        <select id="clue-1"><option>Living Room</option><option>Abandoned Warehouse</option><option>Dark Alleyway</option></select>
+        <label>Cause of Death</label>
+        <select id="clue-2"><option>Sharp Wound</option><option>Asphyxiation</option><option>Poisoning</option></select>
+        <label>State of Scene</label>
+        <select id="clue-3"><option>Violent Struggle</option><option>Traces of Ash</option><option>Completely Clean</option></select>
+        
+        <button class="btn" id="btn-send-clues">Transmit Clues</button>
+    </div>
+
+    <!-- SCREEN 5: INVESTIGATION BOARD -->
+    <div id="screen-investigation" class="screen">
+        <h3>🔍 Active Investigation Clues</h3>
+        <div id="live-clues-box" style="margin: 15px 0;"></div>
+        <h3>👥 Suspect Case Files</h3>
+        <div id="live-board-box"></div>
+        <button class="btn" id="btn-go-vote">Cast Final Accusation Verdict</button>
+    </div>
+
+    <!-- SCREEN 6: VOTING -->
+    <div id="screen-voting" class="screen">
+        <h3>Submit Final Vote</h3>
+        <label>Who is the Killer?</label>
+        <select id="vote-killer-select"></select>
+        <label>What is the Weapon Card?</label>
+        <select id="vote-card-select"></select>
+        <button class="btn" id="btn-submit-vote">Submit Accusation</button>
+    </div>
+
+    <!-- SCREEN 7: END GAME -->
+    <div id="screen-game-over" class="screen" style="text-align:center;">
+        <h2 id="end-title" style="margin-bottom:15px;"></h2>
+        <div id="end-details" style="background:#1a202c; padding:15px; border-radius:8px; text-align:left; margin-bottom: 15px;"></div>
+        <button class="btn btn-secondary" onclick="location.reload()">Return to Menu</button>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+    let currentRoom = null;
+    let myId = null;
+
+    document.getElementById('btn-join').addEventListener('click', () => {
+        const roomCode = document.getElementById('room-input').value;
+        const username = document.getElementById('name-input').value;
+        if(roomCode && username) {
+            currentRoom = roomCode.toUpperCase();
+            myId = socket.id;
+            socket.emit('joinRoom', { roomCode, username });
+            switchScreen('screen-lobby-wait');
+        }
+    });
+
+    socket.on('roomUpdated', (room) => {
+        document.getElementById('display-room-code').innerText = room.code;
+        const list = document.getElementById('lobby-player-list');
+        list.innerHTML = room.players.map(p => `<div style="padding:8px; background:#2d3748; margin-bottom:5px; border-radius:4px;">${p.username}</div>`).join('');
+        
+        if(room.players[0].id === socket.id && room.players.length >= 3) {
+            document.getElementById('btn-start').style.display = 'block';
+        }
+    });
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+        socket.emit('startGame', currentRoom);
+    });
+
+    socket.on('gameUpdated', (room) => {
+        const me = room.players.find(p => p.id === socket.id);
+        
+        if (room.state === 'role_reveal') {
+            switchScreen('screen-reveal');
+            setupRevealScreen(me, room.code);
+        } else if (room.state === 'goyenda_clues') {
+            if (me.role === 'Goyenda') {
+                switchScreen('screen-goyenda');
+                const killer = room.players.find(p => p.role === 'Killer');
+                document.getElementById('intel-killer').innerText = killer.username;
+                document.getElementById('intel-card').innerText = room.killerCard;
+            } else {
+                switchScreen('screen-reveal');
+                document.getElementById('reveal-box').innerText = "Waiting for Goyenda to publish clues...";
+                document.getElementById('secret-content').style.display = 'none';
+            }
+        } else if (room.state === 'investigation') {
+            switchScreen('screen-investigation');
+            renderInvestigation(room);
+        }
+    });
+
+    let secretVisible = false;
+    window.toggleSecret = function() {
+        const content = document.getElementById('secret-content');
+        secretVisible = !secretVisible;
+        content.style.display = secretVisible ? 'block' : 'none';
+        document.getElementById('reveal-box').innerText = secretVisible ? "Tap to Hide Your Identity" : "Tap to Look At Your Secret Identity";
+    };
+
+    function setupRevealScreen(me, roomCode) {
+        document.getElementById('my-role').innerText = me.role === 'Goyenda' ? '🔍 Goyenda' : me.role === 'Killer' ? '🔪 Killer' : '👤 Suspect';
+        secretVisible = false;
+        document.getElementById('secret-content').style.display = 'none';
+
+        if(me.role === 'Killer') {
+            document.getElementById('my-instruction').innerText = "Pick your crime card below to commit the murder safely:";
+            const container = document.getElementById('killer-selection-zone');
+            const options = document.getElementById('killer-cards-options');
+            container.style.display = 'block';
+            options.innerHTML = me.cards.map(c => `<div class="card-option" onclick="killerPick('${c}')">${c}</div>`).join('');
+        } else if (me.role === 'Goyenda') {
+            document.getElementById('my-instruction').innerText = "You are the investigator leader. Wait for the killer to pick their card, then plan your trail.";
+            document.getElementById('killer-selection-zone').style.display = 'none';
+        } else {
+            document.getElementById('my-instruction').innerText = "Examine the cards openly displayed on the table alongside incoming forensic tags.";
+            document.getElementById('killer-selection-zone').style.display = 'none';
+        }
+    }
+
+    window.killerPick = function(card) {
+        socket.emit('killerPickCard', { roomCode: currentRoom, card });
+    };
+
+    document.getElementById('btn-send-clues').addEventListener('click', () => {
+        const clues = [
+            { label: "Location", val: document.getElementById('clue-1').value },
+            { label: "Cause of Death", val: document.getElementById('clue-2').value },
+            { label: "Scene Details", val: document.getElementById('clue-3').value }
+        ];
+        socket.emit('submitClues', { roomCode: currentRoom, clues });
+    });
+
+    function renderInvestigation(room) {
+        document.getElementById('live-clues-box').innerHTML = room.clues.map(c => `
+            <div class="clue-tag"><strong>${c.label}:</strong> ${c.val}</div>
+        `).join('');
+
+        document.getElementById('live-board-box').innerHTML = room.players.filter(p => p.role !== 'Goyenda').map(p => `
+            <div class="player-hand-display">
+                <strong>${p.username}</strong>
+                <div class="hand-cards">
+                    <div class="hand-card">${p.cards[0]}</div>
+                    <div class="hand-card">${p.cards[1]}</div>
+                </div>
+            </div>
+        `).join('');
+
+        const kSelect = document.getElementById('vote-killer-select');
+        const cSelect = document.getElementById('vote-card-select');
+        kSelect.innerHTML = room.players.filter(p => p.role !== 'Goyenda').map(p => `<option value="${p.id}">${p.username}</option>`).join('');
+        
+        let cardOptionsHtml = "";
+        room.players.filter(p => p.role !== 'Goyenda').forEach(p => {
+            cardOptionsHtml += `<option value="${p.cards[0]}">${p.cards[0]} (${p.username})</option>`;
+            cardOptionsHtml += `<option value="${p.cards[1]}">${p.cards[1]} (${p.username})</option>`;
+        });
+        cSelect.innerHTML = cardOptionsHtml;
+    }
+
+    document.getElementById('btn-go-vote').addEventListener('click', () => switchScreen('screen-voting'));
+
+    document.getElementById('btn-submit-vote').addEventListener('click', () => {
+        const accusedId = document.getElementById('vote-killer-select').value;
+        const accusedCard = document.getElementById('vote-card-select').value;
+        socket.emit('submitAccusation', { roomCode: currentRoom, accusedId, accusedCard });
+    });
+
+    socket.on('gameOver', ({ win, killer, killerCard }) => {
+        switchScreen('screen-game-over');
+        const title = document.getElementById('end-title');
+        title.innerText = win ? "🏆 Goyenda Solved It!" : "💀 Killer Escaped!";
+        title.style.color = win ? "#48bb78" : "#f56565";
+        
+        document.getElementById('end-details').innerHTML = `
+            <p><strong>The Real Killer:</strong> ${killer.username}</p>
+            <p><strong>The Secret Card:</strong> ${killerCard}</p>
+        `;
+    });
+
+    function switchScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+</script>
+</body>
+</html>
