@@ -11,47 +11,93 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
-// প্রতিটি সন্দেহভাজন চরিত্রের নাম, ইউনিক অবতার (PNG) এবং প্রতিটি কার্ডের জন্য ছবি ও আইকন সেট করা হয়েছে
-const SUSPECT_DECKS = [
-    { 
-        suspect: "ফেলুদা ফ্যান", 
-        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=feluda", // শার্লক/ডিটেক্টিভ স্টাইল অবতার
-        cards: [
-            { name: "ডিজিটাল পিস্তল", icon: "🔫", img: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=150&q=80" },
-            { name: "টেবিল ল্যাম্পের তার", icon: "🔌", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=150&q=80" },
-            { name: "বিষাক্ত চারমিনার", icon: "🚬", img: "https://images.unsplash.com/photo-1556997685-309989c1aa82?w=150&q=80" }
-        ] 
-    },
-    { 
-        suspect: "ব্যোমকেশ ভক্ত", 
-        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=byomkesh", 
-        cards: [
-            { name: "অ্যান্টিক খঞ্জর", icon: "🗡️", img: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=150&q=80" },
-            { name: "সায়ানাইড ক্যাপসুল", icon: "💊", img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&q=80" },
-            { name: "পকেট ঘড়ির চেইন", icon: "⛓️", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=150&q=80" }
-        ] 
-    },
-    { 
-        suspect: "কাকাবাবু অনুসারী", 
-        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=kakababu", 
-        cards: [
-            { name: "ক্রাচের তলোয়ার", icon: "⚔️", img: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=150&q=80" },
-            { name: "ক্লোরোফর্ম রুমাল", icon: "🧼", img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150&q=80" },
-            { name: "ভারী কাঠের মূর্তি", icon: "🗿", img: "https://images.unsplash.com/photo-1518929458119-e5bf444c30f4?w=150&q=80" }
-        ] 
-    },
-    { 
-        suspect: "মাসুদ রানা স্পাই", 
-        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=rana", 
-        cards: [
-            { name: "সাইলেন্সার রিভলভার", icon: "🔫", img: "https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=150&q=80" },
-            { name: "বিষাক্ত লেজার পেন", icon: "🖊️", img: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=150&q=80" },
-            { name: "নাইলন সুতা", icon: "🧵", img: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=150&q=80" }
-        ] 
-    }
+// --- 🧠 Dynamic AI-Style Generator Pools ---
+
+// ১৫+ গোয়েন্দা ও সন্দেহভাজন ক্যারেক্টার পুল (প্রতি রাউন্ডে ৪টি র্যান্ডমলি সিলেক্ট হবে)
+const SUSPECT_NAMES = [
+    { name: "ফেলুদা ফ্যান", seed: "feluda" },
+    { name: "ব্যোমকেশ ভক্ত", seed: "byomkesh" },
+    { name: "কাকাবাবু অনুসারী", seed: "kakababu" },
+    { name: "মাসুদ রানা স্পাই", seed: "rana" },
+    { name: "কিরীটী অনুরাগী", seed: "kiriti" },
+    { name: "হিমু ট্রাভেলার", seed: "himu" },
+    { name: "মিসির আলী থিঙ্ক-ট্যাঙ্ক", seed: "misir" },
+    { name: "টিনটিন লাভার", seed: "tintin" },
+    { name: "শেরিফ সাহেব", seed: "sheriff" },
+    { name: "রহস্যময়ী তনয়া", seed: "tonoya" },
+    { name: "প্রফেসর শঙ্কু অ্যাসিস্ট্যান্ট", seed: "shonku" },
+    { name: "ডিজিটাল হ্যাকার", seed: "hacker" }
 ];
 
-function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+// ৩০+ বিচিত্র ও রোমাঞ্চকর মার্ডার ওয়েপন (হাতিয়ার) পুল
+const WEAPON_POOL = [
+    { name: "ডিজিটাল পিস্তল", icon: "🔫", img: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=150&q=80" },
+    { name: "টেবিল ল্যাম্পের তার", icon: "🔌", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=150&q=80" },
+    { name: "বিষাক্ত চারমিনার", icon: "🚬", img: "https://images.unsplash.com/photo-1556997685-309989c1aa82?w=150&q=80" },
+    { name: "অ্যান্টিক খঞ্জর", icon: "🗡️", img: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=150&q=80" },
+    { name: "সায়ানাইড ক্যাপসুল", icon: "💊", img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&q=80" },
+    { name: "পকেট ঘড়ির চেইন", icon: "⛓️", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=150&q=80" },
+    { name: "ক্রাচের তলোয়ার", icon: "⚔️", img: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=150&q=80" },
+    { name: "ক্লোরোফর্ম রুমাল", icon: "🧼", img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150&q=80" },
+    { name: "ভারী কাঠের মূর্তি", icon: "🗿", img: "https://images.unsplash.com/photo-1518929458119-e5bf444c30f4?w=150&q=80" },
+    { name: "সাইলেন্সার রিভলভার", icon: "🔫", img: "https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=150&q=80" },
+    { name: "বিষাক্ত লেজার পেন", icon: "🖊️", img: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=150&q=80" },
+    { name: "নাইলন সুতা", icon: "🧵", img: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=150&q=80" },
+    { name: "কাঁচের ভাঙা টুকরো", icon: "💎", img: "https://images.unsplash.com/photo-1517524206127-48bbd363f3d7?w=150&q=80" },
+    { name: "জং ধরা পেরেক", icon: "📌", img: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=150&q=80" },
+    { name: "হিমায়িত বরফের টুকরো", icon: "❄️", img: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=150&q=80" },
+    { name: "মেকআপ কিটের সুঁই", icon: "🪡", img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=150&q=80" },
+    { name: "প্রাচীন সোনার মুদ্রা (ভারী)", icon: "🪙", img: "https://images.unsplash.com/photo-1621972750749-0fbb1abb7736?w=150&q=80" },
+    { name: "অজানা ভেষজ তরল", icon: "🧪", img: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=150&q=80" }
+];
+
+// ডাইনামিক ক্লু অপশন (প্রতিবার গোয়েন্দার জন্য নতুন নতুন ড্রপডাউন অপশন আসবে)
+const CLUE_OPTIONS = {
+    locations: [
+        ["ড্রয়িং রুম", "পরিত্যক্ত গুদামঘর", "অন্ধকার গলি"],
+        ["লাইব্রেরি রুম", "ছাদের চিলেকোঠা", "পুরনো রাজবাড়ি"],
+        ["গোপন ল্যাবরেটরি", "লঞ্চের কেবিন", "কুয়াশাচ্ছন্ন বাগান"],
+        ["জঙ্গলের বাংলো", "আন্ডারগ্রাউন্ড পার্কিং", "চলন্ত ট্রেন"]
+    ],
+    causes: [
+        ["ধারালো অস্ত্র", "শ্বাসরোধ", "বিষপ্রয়োগ"],
+        ["মাথায় আঘাত", "বিদ্যুতায়িত", "অতিরিক্ত রক্তক্ষরণ"],
+        ["অ্যালার্জি বিক্রিয়া", "ধীরগতির বিষ", "হার্ট অ্যাটাক (কৃত্রিম)"]
+    ],
+    scenarios: [
+        ["ধস্তাধস্তি", "একদম পরিষ্কার", "রক্তের ছিট ফোঁটা"],
+        ["ভেজা জুতার ছাপ", "খোলা জানালা", "অর্ধেক খাওয়া চা"],
+        ["ভাঙা ফুলদানি", "উল্টে থাকা চেয়ার", "পোড়া কাগজের ছাই"]
+    ]
+};
+
+function shuffle(array) { 
+    return array.sort(() => Math.random() - 0.5); 
+}
+
+// প্রতি রাউন্ডের জন্য ইউনিক ক্যারেক্টার ডেক জেনারেট করার এআই ফাংশন
+function generateDynamicDecks(playerCount) {
+    let shuffledSuspects = shuffle([...SUSPECT_NAMES]);
+    let shuffledWeapons = shuffle([...WEAPON_POOL]);
+    
+    let decks = [];
+    // প্রতি প্লেয়ারের জন্য ১টি সন্দেহভাজন রোল এবং ৩টি সম্পূর্ণ ইউনিক হাতিয়ার কার্ড সেট করা
+    for(let i = 0; i < playerCount; i++) {
+        let suspect = shuffledSuspects[i] || { name: `সন্দেহভাজন ${i+1}`, seed: `avatar${i}` };
+        let cards = [
+            shuffledWeapons[i * 3],
+            shuffledWeapons[i * 3 + 1],
+            shuffledWeapons[i * 3 + 2]
+        ].filter(Boolean); // কোনো কারণে নাল বা আনডিফাইন্ড থাকলে ফিল্টার করবে
+
+        decks.push({
+            suspect: suspect.name,
+            avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${suspect.seed}`,
+            cards: cards
+        });
+    }
+    return decks;
+}
 
 io.on('connection', (socket) => {
     
@@ -61,7 +107,7 @@ io.on('connection', (socket) => {
         if (!code || !name) return;
 
         if (!rooms[code]) {
-            rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
+            rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [], cluePools: {} };
         }
         
         let existingPlayer = rooms[code].players.find(p => p.username.toLowerCase() === name.toLowerCase());
@@ -88,10 +134,19 @@ io.on('connection', (socket) => {
         room.clues = [];
         room.killerCard = null;
 
+        // এই রাউন্ডের জন্য একদম ইউনিক ক্লু অপশন সেট করা
+        room.cluePools = {
+            locations: shuffle([...CLUE_OPTIONS.locations])[0],
+            causes: shuffle([...CLUE_OPTIONS.causes])[0],
+            scenarios: shuffle([...CLUE_OPTIONS.scenarios])[0]
+        };
+
         let shuffledPlayers = shuffle([...room.players]);
         let goyenda = shuffledPlayers[0];
         let killer = shuffledPlayers[1];
-        let deckPool = shuffle([...SUSPECT_DECKS]);
+        
+        // ডাইনামিক ডেক জেনারেশন
+        let dynamicDecks = generateDynamicDecks(room.players.length);
         let deckIndex = 0;
 
         room.players.forEach(p => {
@@ -99,9 +154,9 @@ io.on('connection', (socket) => {
                 p.role = 'Goyenda'; 
                 p.cards = []; 
                 p.assignedSuspectName = "প্রধান গোয়েন্দা";
-                p.avatar = "https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss"; // বিশেষ রোবট/গোয়েন্দা লোগো
+                p.avatar = "https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss";
             } else {
-                let deck = deckPool[deckIndex++];
+                let deck = dynamicDecks[deckIndex++];
                 if (p.id === killer.id) {
                     p.role = 'Killer';
                 } else {
