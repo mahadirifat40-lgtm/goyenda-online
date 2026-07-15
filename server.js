@@ -12,15 +12,15 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ডেটাবেস ফাইল তৈরি (ফাইল হিসেবে সেভ থাকবে)
+// ডেটাবেস ফাইল তৈরি
 const db = Datastore.create({ filename: path.join(__dirname, 'users.db'), autoload: true });
 
-// একটি ডিফল্ট এডমিন অ্যাকাউন্ট তৈরি (যদি না থাকে)
+// একটি ডিফল্ট ম্যানুয়াল এডমিন অ্যাকাউন্ট তৈরি (যদি না থাকে)
 async function initAdmin() {
     const adminExists = await db.findOne({ username: 'admin' });
     if (!adminExists) {
         const hashedPassword = await bcrypt.hash('admin1234', 10);
-        await db.insert({ username: 'admin', password: hashedPassword, role: 'admin', points: 0 });
+        await db.insert({ username: 'admin', password: hashedPassword, role: 'admin', points: 0, profilePic: '' });
         console.log("Default Admin Created -> User: admin | Pass: admin1234");
     }
 }
@@ -28,7 +28,7 @@ initAdmin();
 
 // --- API Routes (Authentication) ---
 
-// রেজিস্ট্রেশন API
+// রেজিস্ট্রেশন API (ম্যানুয়াল প্লেয়ারদের জন্য)
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -38,14 +38,14 @@ app.post('/api/auth/register', async (req, res) => {
         if (userExists) return res.status(400).json({ error: 'এই ইউজারনেমটি ইতিমধ্যে নেওয়া হয়েছে!' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        await db.insert({ username: username.toLowerCase(), password: hashedPassword, role: 'player', points: 0 });
+        await db.insert({ username: username.toLowerCase(), password: hashedPassword, role: 'player', points: 0, profilePic: '' });
         res.json({ success: true, message: 'রেজিস্ট্রেশন সফল হয়েছে!' });
     } catch (err) {
         res.status(500).json({ error: 'সার্ভার সমস্যা!' });
     }
 });
 
-// লগইন API
+// লগইন API (ম্যানুয়াল প্লেয়ারদের জন্য)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -55,16 +55,37 @@ app.post('/api/auth/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ error: 'ভুল পাসওয়ার্ড!' });
 
-        res.json({ success: true, username: user.username, role: user.role, points: user.points });
+        res.json({ success: true, username: user.username, role: user.role, points: user.points, profilePic: user.profilePic || '' });
     } catch (err) {
         res.status(500).json({ error: 'সার্ভার সমস্যা!' });
     }
 });
 
-// এডমিন প্যানেল API (সব ইউজারের লিস্ট দেখতে)
+// ফেসবুক লগইন ও ডেটাবেস সিঙ্ক API
+app.post('/api/auth/facebook', async (req, res) => {
+    try {
+        const { username, profilePic } = req.body;
+        if (!username) return res.status(400).json({ error: 'ফেসবুক ডেটা পাওয়া যায়নি!' });
+
+        let user = await db.findOne({ username: username.toLowerCase() });
+        if (!user) {
+            // নতুন ফেসবুক ইউজার হলে ডেটাবেসে ইনসার্ট হবে
+            user = await db.insert({ username: username.toLowerCase(), role: 'player', points: 0, profilePic: profilePic, isFacebook: true });
+        } else {
+            // প্রোফাইল পিকচার চেঞ্জ হলে আপডেট হবে
+            await db.update({ username: username.toLowerCase() }, { $set: { profilePic: profilePic } });
+            user = await db.findOne({ username: username.toLowerCase() });
+        }
+        res.json({ success: true, username: user.username, role: user.role, points: user.points, profilePic: user.profilePic });
+    } catch (err) {
+        res.status(500).json({ error: 'ফেসবুক অথেন্টিকেশন ফেইল্ড!' });
+    }
+});
+
+// এডমিন প্যানেল API
 app.get('/api/admin/users', async (req, res) => {
     try {
-        const users = await db.find({}, { password: 0 }); // পাসওয়ার্ড ছাড়া সব ডেটা আনবে
+        const users = await db.find({}, { password: 0 });
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: 'ডেটা আনা সম্ভব হয়নি!' });
@@ -83,6 +104,7 @@ app.delete('/api/admin/users/:id', async (req, res) => {
 
 // --- GAME LOGIC (SOCKET.IO) ---
 let rooms = {};
+let onlineFbUsers = {}; // লাইভ অনলাইন ফেসবুক ইউজার ট্র্যাকিং
 const SUSPECT_DECKS = [
     { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
     { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পকেট ঘড়ির চেইন"] },
@@ -92,8 +114,32 @@ const SUSPECT_DECKS = [
 
 function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
+// যারা একে অপরের ফেসবুক ফ্রেন্ড এবং গেমের লাইভ সার্ভারে অনলাইন আছে তাদের লিস্ট ব্রডকাস্ট করা
+function sendOnlineFriendsList() {
+    Object.keys(onlineFbUsers).forEach(socketId => {
+        const currentUser = onlineFbUsers[socketId];
+        let onlineFriends = Object.values(onlineFbUsers).filter(otherUser => {
+            if (otherUser.socketId === socketId) return false;
+            return currentUser.friends.some(f => f.name.toLowerCase() === otherUser.username.toLowerCase());
+        });
+        io.to(socketId).emit('updateOnlineFriends', onlineFriends);
+    });
+}
+
 io.on('connection', (socket) => {
-    socket.on('joinRoom', ({ roomCode, username, peerId }) => {
+    
+    // ফেসবুক প্লেয়ার অনলাইনে আসলে ফ্রেন্ডলিস্ট ট্র্যাকিং
+    socket.on('fbUserOnline', ({ username, profilePic, friends }) => {
+        onlineFbUsers[socket.id] = { socketId: socket.id, username, profilePic, friends };
+        sendOnlineFriendsList();
+    });
+
+    // ডিরেক্ট ইনভাইটেশন পাঠানো লজিক
+    socket.on('sendRoomInvite', ({ targetSocketId, roomCode, sender }) => {
+        io.to(targetSocketId).emit('receiveRoomInvite', { roomCode, sender });
+    });
+
+    socket.on('joinRoom', ({ roomCode, username, peerId, profilePic }) => {
         const code = roomCode.toUpperCase();
         if (!rooms[code]) {
             rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
@@ -102,11 +148,12 @@ io.on('connection', (socket) => {
         let existingPlayer = rooms[code].players.find(p => p.username === username);
         if (!existingPlayer) {
             rooms[code].players.push({ 
-                id: socket.id, username, peerId, role: 'Suspect', cards: [], points: 0 
+                id: socket.id, username, peerId, role: 'Suspect', cards: [], points: 0, profilePic: profilePic || ''
             });
         } else {
             existingPlayer.id = socket.id;
             existingPlayer.peerId = peerId;
+            if(profilePic) existingPlayer.profilePic = profilePic;
         }
 
         socket.join(code);
@@ -172,7 +219,6 @@ io.on('connection', (socket) => {
         const killer = room.players.find(p => p.role === 'Killer');
         const win = (accusedId === killer.id && accusedCard === room.killerCard);
 
-        // ডেটাবেসে পয়েন্ট সেভ করার লজিক
         for (let p of room.players) {
             let ptsToAdd = 0;
             if (win) {
@@ -182,7 +228,6 @@ io.on('connection', (socket) => {
                 if (p.role === 'Killer') ptsToAdd = 3;
             }
             p.points += ptsToAdd;
-            // ডেটাবেস আপডেট
             await db.update({ username: p.username.toLowerCase() }, { $inc: { points: ptsToAdd } });
         }
 
@@ -192,6 +237,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        if (onlineFbUsers[socket.id]) {
+            delete onlineFbUsers[socket.id];
+            sendOnlineFriendsList();
+        }
         for (let code in rooms) {
             rooms[code].players = rooms[code].players.filter(p => p.id !== socket.id);
             if (rooms[code].players.length === 0) delete rooms[code];
@@ -201,4 +250,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Professional Auth & Admin Server Live!`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Professional Full-Stack FB Connected Game Live!`));
