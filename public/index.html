@@ -6,8 +6,8 @@
     <title>গোয়েন্দাগিরি অনলাইন</title>
     <style>
         :root {
-            --bg-color: #0d0f12;
-            --panel-glass: rgba(25, 30, 40, 0.95);
+            --bg-color: #0c0e12;
+            --panel-glass: rgba(18, 22, 30, 0.95);
             --accent-crimson: #ff3344;
             --accent-gold: #e2b13c;
             --detective-blue: #0088ff;
@@ -16,24 +16,150 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { 
-            background: radial-gradient(circle, rgba(16,20,28,0.6) 0%, rgba(5,6,8,0.98) 100%), url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&q=80&w=1200') no-repeat center center fixed;
-            background-size: cover; color: var(--text-glow); display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; 
+            background: radial-gradient(circle, rgba(16,20,28,0.7) 0%, rgba(5,6,8,0.99) 100%), url('https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&q=80&w=1200') no-repeat center center fixed;
+            background-size: cover; color: var(--text-glow); display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 10px; 
         }
-        .game-container { width: 100%; max-width: 600px; background: var(--panel-glass); backdrop-filter: blur(12px); border-radius: 16px; padding: 25px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-        h1 { text-align: center; color: var(--accent-crimson); font-size: 2.2rem; margin-bottom: 5px; text-shadow: 0 0 15px rgba(255, 51, 68, 0.6); }
-        .subtitle { text-align: center; font-size: 0.9rem; color: var(--muted-gray); margin-bottom: 25px; }
+        .game-container { width: 100%; max-width: 800px; background: var(--panel-glass); backdrop-filter: blur(12px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
+        h1 { text-align: center; color: var(--accent-crimson); font-size: 1.8rem; margin-bottom: 5px; text-shadow: 0 0 15px rgba(255, 51, 68, 0.5); }
+        .subtitle { text-align: center; font-size: 0.85rem; color: var(--muted-gray); margin-bottom: 20px; }
         .screen { display: none; }
         .screen.active { display: block; }
-        .btn { background: linear-gradient(135deg, var(--accent-crimson), #b31c28); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; }
+        .btn { background: linear-gradient(135deg, var(--accent-crimson), #b31c28); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; transition: transform 0.2s; }
+        .btn:hover { transform: scale(1.02); }
         .btn-secondary { background: linear-gradient(135deg, #4a5568, #2d3748); }
-        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background-color: rgba(20, 24, 33, 0.85); color: white; margin-bottom: 15px; font-size: 1rem; }
-        label { color: var(--accent-gold); font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 6px; }
-        .points-tab { background: rgba(15, 20, 30, 0.85); border: 1px solid rgba(226, 177, 60, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 20px; }
-        .clue-tag { background: rgba(0, 136, 255, 0.15); padding: 12px; border-radius: 8px; border-left: 5px solid var(--detective-blue); margin-bottom: 8px;}
-        .player-hand-display { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px;}
-        .hand-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
-        .hand-card { padding: 8px 4px; background: rgba(20, 24, 33, 0.9); border-radius: 6px; text-align: center; font-size: 0.8rem; font-weight: bold; }
-        .footer-credit { text-align: center; margin-top: 25px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.4); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background-color: rgba(20, 24, 33, 0.9); color: white; margin-bottom: 15px; font-size: 1rem; }
+        label { color: var(--accent-gold); font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px; }
+        
+        .points-tab { background: rgba(15, 20, 30, 0.85); border: 1px solid rgba(226, 177, 60, 0.25); border-radius: 10px; padding: 10px; margin-bottom: 15px; }
+        
+        /* --- BOARD LAYOUT (স্কেচ অনুযায়ী ডিজাইন) --- */
+        .table-board {
+            position: relative;
+            background: radial-gradient(circle, rgba(30, 40, 55, 0.4) 0%, rgba(10, 15, 25, 0.9) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 520px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        /* মাঝখানের গোয়েন্দা জোন */
+        .goyenda-center {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, rgba(0, 136, 255, 0.25), rgba(0, 70, 150, 0.8));
+            border: 3px double var(--detective-blue);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(0, 136, 255, 0.5);
+            padding: 10px;
+        }
+        .goyenda-center h4 { color: #fff; font-size: 1.1rem; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .goyenda-center span { font-size: 0.8rem; color: var(--accent-gold); font-weight: bold; }
+
+        /* চারপাশের প্লেয়ারদের গ্রিড লেআউট (স্কেচ অনুকরণে) */
+        .players-circle-layout {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-areas: 
+                "top top"
+                "left right"
+                "bottom bottom";
+            justify-content: space-between;
+            align-content: space-between;
+            padding: 15px;
+        }
+
+        .player-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 12px;
+            width: 160px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        .player-node.active-me {
+            border: 1.5px solid var(--accent-gold);
+            background: rgba(226, 177, 60, 0.05);
+        }
+
+        /* প্লেয়ারদের অবস্থান বন্টন */
+        .player-node-top { grid-area: top; margin: 0 auto; }
+        .player-node-left { grid-area: left; margin-top: auto; margin-bottom: auto; }
+        .player-node-right { grid-area: right; margin-top: auto; margin-bottom: auto; }
+        .player-node-bottom { grid-area: bottom; margin: 0 auto; }
+
+        .player-badge {
+            background: rgba(0,0,0,0.6);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+            text-overflow: ellipsis;
+            white-overflow: nowrap;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .player-badge.role-goyenda { color: var(--detective-blue); border-color: var(--detective-blue); }
+        .player-badge.role-killer { color: var(--accent-crimson); border-color: var(--accent-crimson); }
+
+        /* কার্ডের মিনিমাল ডিজাইন (স্কেচের ৩টি কার্ডের ঘর) */
+        .cards-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            width: 100%;
+        }
+        .mini-card {
+            flex: 1;
+            aspect-ratio: 2/3;
+            background: linear-gradient(145deg, #1d2331, #0f131a);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            padding: 4px 2px;
+            text-align: center;
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ddd;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        /* ক্লু বক্স */
+        .clues-hud {
+            background: rgba(0, 136, 255, 0.08);
+            border-left: 5px solid var(--detective-blue);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+        .clues-grid-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 5px; }
+
+        .footer-credit { text-align: center; margin-top: 20px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.3); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
         .footer-credit span { color: var(--accent-crimson); font-weight: bold; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
@@ -46,8 +172,8 @@
 
     <!-- LIVE SCOREBOARD -->
     <div id="global-scoreboard" class="points-tab" style="display: none;">
-        <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 5px;">📊 রুম স্কোরবোর্ড (এই ম্যাচ)</div>
-        <div id="points-list-box" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
+        <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 5px; font-size: 0.85rem;">📊 স্কোরবোর্ড</div>
+        <div id="points-list-box" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:5px;"></div>
     </div>
 
     <!-- SCREEN 1: QUICK JOIN -->
@@ -70,23 +196,25 @@
         <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 10px;">রুম থেকে বের হন 🚪</button>
     </div>
 
-    <!-- SCREEN 3: ROLE REVEAL -->
-    <div id="screen-reveal" class="screen">
-        <div class="reveal-box" id="reveal-box" onclick="toggleSecret()" style="background: rgba(255,255,255,0.05); border: 2px dashed var(--accent-gold); padding: 25px; text-align: center; border-radius: 12px; cursor: pointer; font-weight: bold; margin-bottom: 15px;">👁️ গোপন পরিচয় দেখতে ট্যাপ করুন</div>
-        <div id="secret-content" style="display:none; text-align:center;">
-            <h2 id="my-role" style="margin-bottom:10px;"></h2>
-            <h4 id="my-suspect-name" style="color:var(--accent-gold); margin-bottom:10px;"></h4>
-            <p id="my-instruction" style="color:var(--muted-gray); margin-bottom:15px;"></p>
-            <div id="killer-selection-zone" style="display:none;">
+    <!-- SCREEN 3: SECRET ROLE NOTIFICATION (POPUP OR MINI VIEW) -->
+    <div id="screen-reveal" class="screen" style="text-align: center;">
+        <div style="background: rgba(255,255,255,0.03); border: 2px dashed var(--accent-gold); padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+            <h2 id="my-role-reveal-title" style="color: var(--accent-gold); margin-bottom: 8px;"></h2>
+            <p id="my-role-reveal-desc" style="color: var(--muted-gray); font-size: 0.9rem;"></p>
+            
+            <!-- খুনি কার্ড সিলেকশন করার জোন -->
+            <div id="killer-selection-zone" style="display:none; margin-top: 15px;">
+                <label>🗡️ আপনার হত্যার হাতিয়ার নির্ধারণ করুন (অন্যরা দেখবে না):</label>
                 <div id="killer-cards-options"></div>
             </div>
         </div>
+        <p style="font-size:0.85rem; color:var(--muted-gray);" id="waiting-status-text">খুনির কার্ড সিলেক্ট করার জন্য অপেক্ষা করা হচ্ছে...</p>
     </div>
 
-    <!-- SCREEN 4: GOYENDA DASHBOARD -->
-    <div id="screen-goyenda" class="screen">
-        <h3>🔍 গোয়েন্দা ড্যাশবোর্ড</h3>
-        <p style="margin: 10px 0;">খুনি: <strong id="intel-killer" style="color:var(--accent-crimson)"></strong> | হাতিয়ার: <strong id="intel-card" style="color:var(--accent-gold)"></strong></p>
+    <!-- SCREEN 4: GOYENDA DASHBOARD (ONLY SEEN BY GOYENDA) -->
+    <div id="screen-goyenda-clues" class="screen">
+        <h3>🔍 গোয়েন্দা ড্যাশবোর্ড (ক্লু সাজান)</h3>
+        <p style="margin: 10px 0;">আসল খুনি: <strong id="intel-killer" style="color:var(--accent-crimson)"></strong> | আসল হাতিয়ার: <strong id="intel-card" style="color:var(--accent-gold)"></strong></p>
         <label>📍 স্থান</label>
         <select id="clue-1"><option>ড্রয়িং রুম</option><option>পরিত্যক্ত গুদামঘর</option><option>অন্ধকার গলি</option></select>
         <label>🧪 মৃত্যুর কারণ</label>
@@ -96,12 +224,36 @@
         <button class="btn" id="btn-send-clues">ক্লু প্রেরণ করুন 📡</button>
     </div>
 
-    <!-- SCREEN 5: INVESTIGATION BOARD -->
+    <!-- SCREEN 5: INVESTIGATION BOARD (THE CIRCULAR BOARD SCREEN) -->
     <div id="screen-investigation" class="screen">
-        <h3>🕵️‍♂️ ফরেনসিক আলামত ও ফাইল</h3>
-        <div id="live-clues-box" style="margin-bottom:15px;"></div>
-        <div id="live-board-box"></div>
-        <button class="btn" id="btn-go-vote">⚖️ চূড়ান্ত অভিযোগে যান</button>
+        <!-- ক্লু হাব (ফরেনসিক ফাইল) -->
+        <div class="clues-hud">
+            <div style="font-weight: bold; color: var(--detective-blue);">🕵️‍♂️ আলামত বা ক্লু সমূহ:</div>
+            <div id="live-clues-hud-box" class="clues-grid-hud">
+                <div>স্থান: --</div>
+                <div>মৃত্যু: --</div>
+                <div>ঘটনাস্থল: --</div>
+            </div>
+        </div>
+
+        <!-- বৃত্তাকার বা অর্গানাইজড বোর্ড লেআউট (লাইভ) -->
+        <div class="table-board" id="game-table-board">
+            <!-- Center Goyenda Spot -->
+            <div class="goyenda-center">
+                <h4 id="board-goyenda-name">তদন্তকারী</h4>
+                <span>গোয়েন্দা 🔍</span>
+            </div>
+
+            <!-- Players surrounding grid (will generate 4 nodes maximum) -->
+            <div class="players-circle-layout" id="players-circle-container">
+                <!-- Dynamic Nodes will inject here -->
+            </div>
+        </div>
+
+        <div style="display:flex; gap: 10px;">
+            <button class="btn" id="btn-go-vote">⚖️ চূড়ান্ত রায় পেশ করুন</button>
+            <button class="btn btn-secondary" style="width: 30%;" onclick="showMyRoleAgain()">আমার রোল?</button>
+        </div>
     </div>
 
     <!-- SCREEN 6: VOTING -->
@@ -129,6 +281,7 @@
 <script>
     const socket = io();
     let currentRoom = null, loggedInUser = null;
+    let myRoleData = null; // নিজের রোল মনে রাখার জন্য
 
     // --- Join Game Logic ---
     document.getElementById('btn-join-room').addEventListener('click', () => {
@@ -149,21 +302,21 @@
     });
 
     function leaveRoom() {
-        location.reload(); // পেজ রিলোড করে সহজে রুম থেকে সম্পূর্ণ বের হয়ে যাওয়া যায়
+        location.reload();
     }
 
     // --- Socket Listeners ---
     socket.on('roomUpdated', (room) => {
         document.getElementById('display-room-code').innerText = room.code;
         
-        // ম্যাচ স্কোরবোর্ড আপডেট
+        // স্কোরবোর্ড
         document.getElementById('points-list-box').innerHTML = room.players.map(p => `
-            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:6px; font-size:0.85rem;">
-                👤 ${p.username}: <strong>${p.points} Pts</strong>
+            <div style="background:rgba(255,255,255,0.05); padding:4px; border-radius:4px; font-size:0.75rem; text-align:center;">
+                👤 ${p.username}: <strong>${p.points} P</strong>
             </div>
         `).join('');
         
-        // ওয়েটিং লিস্ট আপডেট
+        // ওয়েটিং লিস্ট
         const list = document.getElementById('lobby-player-list');
         list.innerHTML = room.players.map(p => `
             <div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:6px; border-radius:6px;">
@@ -171,7 +324,6 @@
             </div>
         `).join('');
         
-        // প্রথম প্লেয়ারকে হোস্ট বানিয়ে "শুরু" বাটন দেখানো (মিনিমাম ৩ জন হলে)
         if(room.players[0].username === loggedInUser && room.players.length >= 3) {
             document.getElementById('btn-start').style.display = 'block';
         } else {
@@ -184,82 +336,116 @@
 
     socket.on('gameUpdated', (room) => {
         const me = room.players.find(p => p.username === loggedInUser);
+        myRoleData = me;
+
         if (room.state === 'role_reveal') { 
             switchScreen('screen-reveal'); 
             setupRevealScreen(me); 
         }
         else if (room.state === 'goyenda_clues') {
             if (me.role === 'Goyenda') {
-                switchScreen('screen-goyenda');
+                switchScreen('screen-goyenda-clues');
                 const killer = room.players.find(p => p.role === 'Killer');
                 document.getElementById('intel-killer').innerText = killer.username;
                 document.getElementById('intel-card').innerText = room.killerCard;
             } else {
                 switchScreen('screen-reveal');
-                document.getElementById('reveal-box').innerText = "🔍 প্রধান গোয়েন্দা আলামত সাজাচ্ছেন...";
-                document.getElementById('secret-content').style.display = 'none';
+                document.getElementById('my-role-reveal-title').innerText = "🔍 ক্লু রেডি হচ্ছে...";
+                document.getElementById('my-role-reveal-desc').innerText = "প্রধান গোয়েন্দা বর্তমানে আপনার অপরাধের আলামত বা ক্লুগুলো সাজাচ্ছেন। ধৈর্য ধরুন...";
+                document.getElementById('killer-selection-zone').style.display = 'none';
             }
         } else if (room.state === 'investigation') { 
             switchScreen('screen-investigation'); 
-            renderInvestigation(room); 
+            renderInvestigationBoard(room); 
         }
     });
 
-    let secretVisible = false;
-    window.toggleSecret = function() {
-        secretVisible = !secretVisible;
-        document.getElementById('secret-content').style.display = secretVisible ? 'block' : 'none';
-        document.getElementById('reveal-box').innerText = secretVisible ? "👁️ পরিচয় লুকাতে ট্যাপ করুন" : "👁️ গোপন পরিচয় দেখতে ট্যাপ করুন";
-    };
-
     function setupRevealScreen(me) {
-        secretVisible = false; 
-        document.getElementById('secret-content').style.display = 'none';
-        document.getElementById('reveal-box').innerText = "👁️ গোপন পরিচয় দেখতে ট্যাপ করুন";
-        
-        const roleEl = document.getElementById('my-role');
-        const instEl = document.getElementById('my-instruction');
-        
+        const titleEl = document.getElementById('my-role-reveal-title');
+        const descEl = document.getElementById('my-role-reveal-desc');
+        const killerZone = document.getElementById('killer-selection-zone');
+
         if(me.role === 'Goyenda') {
-            roleEl.innerText = '🔍 প্রধান গোয়েন্দা'; 
-            roleEl.style.color = 'var(--detective-blue)';
-            instEl.innerText = "আপনি মামলার প্রধান তদন্তকারী। খুনি নিজে কার্ড সিলেক্ট করার পর আপনার ড্যাশবোর্ডে ক্লু অপশন খুলে যাবে।";
-            document.getElementById('killer-selection-zone').style.display = 'none';
+            titleEl.innerText = '🔍 প্রধান গোয়েন্দা';
+            titleEl.style.color = 'var(--detective-blue)';
+            descEl.innerText = "আপনি মামলার প্রধান তদন্তকারী। খুনি হাতিয়ার সিলেক্ট করলে আপনার কাছে ক্লু সাবমিট করার প্যানেল চলে আসবে।";
+            killerZone.style.display = 'none';
         } else if (me.role === 'Killer') {
-            roleEl.innerText = '🔪 আপনি খুনি (Killer)'; 
-            roleEl.style.color = 'var(--accent-crimson)';
-            instEl.innerText = "নিচের যেকোনো একটি কার্ড সিলেক্ট করে আপনার অপরাধের হাতিয়ার নির্ধারণ করুন:";
-            const zone = document.getElementById('killer-cards-options');
-            document.getElementById('killer-selection-zone').style.display = 'block';
-            zone.innerHTML = me.cards.map(c => `<div class="btn" style="margin-top:5px;" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card:'${c}'})">🗡️ ${c}</div>`).join('');
+            titleEl.innerText = '🔪 আপনি খুনি (Killer)';
+            titleEl.style.color = 'var(--accent-crimson)';
+            descEl.innerText = "কারো কাছে নিজের পরিচয় প্রকাশ করবেন না! নিচে থেকে যেকোনো একটি কার্ড সিলেক্ট করে আপনার অপরাধের হাতিয়ার নির্ধারণ করুন:";
+            killerZone.style.display = 'block';
+            
+            const options = document.getElementById('killer-cards-options');
+            options.innerHTML = me.cards.map(c => `
+                <button class="btn" style="margin-top:5px; background:var(--accent-crimson);" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card:'${c}'})">🗡️ ${c}</button>
+            `).join('');
         } else {
-            roleEl.innerText = '👤 সন্দেহভাজন'; 
-            roleEl.style.color = '#fff';
-            instEl.innerText = "আপনি একজন নিরপরাধ নাগরিক। গোয়েন্দাকে সাহায্য করুন খুনি এবং সঠিক হাতিয়ার শনাক্ত করতে।";
-            document.getElementById('killer-selection-zone').style.display = 'none';
+            titleEl.innerText = '👤 সন্দেহভাজন';
+            titleEl.style.color = '#fff';
+            descEl.innerText = `আপনার চরিত্র: "${me.assignedSuspectName}"। আপনি একজন নিরীহ নাগরিক। আপনার হাতের কার্ডগুলো দিয়ে গোয়েন্দাকে সাহায্য করুন খুনি ধরতে।`;
+            killerZone.style.display = 'none';
         }
-        document.getElementById('my-suspect-name').innerText = "আপনার চরিত্র: " + (me.assignedSuspectName || 'সন্দেহভাজন');
     }
 
-    function renderInvestigation(room) {
-        document.getElementById('live-clues-box').innerHTML = room.clues.map(c => `<div class="clue-tag"><strong>${c.label}:</strong> ${c.val}</div>`).join('');
-        document.getElementById('live-board-box').innerHTML = room.players.filter(p => p.role !== 'Goyenda').map(p => `
-            <div class="player-hand-display">
-                <div style="font-weight: bold; margin-bottom: 4px;">👤 ${p.username} [${p.assignedSuspectName}]</div>
-                <div class="hand-cards">${p.cards.map(c => `<div class="hand-card">${c}</div>`).join('')}</div>
-            </div>
+    // --- গোল টেবিল ও সবার কার্ড দেখতে পাওয়ার আর্কিটেকচার ---
+    function renderInvestigationBoard(room) {
+        // ক্লু আপডেট
+        if (room.clues && room.clues.length > 0) {
+            document.getElementById('live-clues-hud-box').innerHTML = room.clues.map(c => `
+                <div><strong>${c.label}:</strong> <span style="color:var(--accent-gold)">${c.val}</span></div>
+            `).join('');
+        }
+
+        // গোয়েন্দার নাম সেন্টারে বসানো
+        const goyenda = room.players.find(p => p.role === 'Goyenda');
+        document.getElementById('board-goyenda-name').innerText = goyenda ? goyenda.username : "তদন্তকারী";
+
+        // চারপাশের বাকি প্লেয়ারদের (Goyenda বাদে) স্কেচের মতো ৪টি দিকে বসানো
+        const suspectPlayers = room.players.filter(p => p.role !== 'Goyenda');
+        const container = document.getElementById('players-circle-container');
+        container.innerHTML = ''; // রিফ্রেশ
+
+        // ৪টি পজিশন এসাইন করা
+        const positions = ['top', 'left', 'right', 'bottom'];
+
+        suspectPlayers.forEach((p, idx) => {
+            const posClass = `player-node-${positions[idx % 4]}`;
+            const isMe = (p.username === loggedInUser) ? 'active-me' : '';
+            
+            // ৩টি মিনি কার্ড তৈরি করা (যা সবাই যেকোনো সময় দেখতে পাবে)
+            const cardsHtml = p.cards.map(card => `
+                <div class="mini-card">${card}</div>
+            `).join('');
+
+            const playerNodeHtml = `
+                <div class="player-node ${posClass} ${isMe}">
+                    <div class="player-badge">${p.username}</div>
+                    <div class="cards-row">${cardsHtml}</div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', playerNodeHtml);
+        });
+
+        // ভোটিং প্যানেলের লিস্ট আপডেট করা
+        document.getElementById('vote-killer-select').innerHTML = suspectPlayers.map(p => `
+            <option value="${p.id}">${p.username} (${p.assignedSuspectName})</option>
         `).join('');
         
-        document.getElementById('vote-killer-select').innerHTML = room.players.filter(p => p.role !== 'Goyenda').map(p => `<option value="${p.id}">${p.username}</option>`).join('');
-        let cardsHtml = "";
-        room.players.filter(p => p.role !== 'Goyenda').forEach(p => p.cards.forEach(c => { cardsHtml += `<option value="${c}">${c}</option>`; }));
-        document.getElementById('vote-card-select').innerHTML = cardsHtml;
+        let allCardsHtml = "";
+        suspectPlayers.forEach(p => {
+            p.cards.forEach(c => {
+                allCardsHtml += `<option value="${c}">${c} (${p.username}-এর কার্ড)</option>`;
+            });
+        });
+        document.getElementById('vote-card-select').innerHTML = allCardsHtml;
     }
 
+    // গোয়েন্দার ক্লু পাঠানো
     document.getElementById('btn-send-clues').addEventListener('click', () => {
         const clues = [
             { label: '📍 স্থান', val: document.getElementById('clue-1').value },
-            { label: '🧪 মৃত্যুর কারণ', val: document.getElementById('clue-2').value },
+            { label: '🧪 মৃত্যু', val: document.getElementById('clue-2').value },
             { label: '🧥 ঘটনাস্থল', val: document.getElementById('clue-3').value }
         ];
         socket.emit('submitClues', { roomCode: currentRoom, clues });
@@ -278,7 +464,7 @@
         const title = document.getElementById('end-title');
         title.innerText = win ? "🏆 গোয়েন্দা জিতেছে!" : "💀 খুনি জিতে গেছে!";
         title.style.color = win ? "#48bb78" : "var(--accent-crimson)";
-        document.getElementById('end-details').innerHTML = `<p><strong>খুনি ছিল:</strong> ${killer.username}</p><p><strong>হাতিয়ার:</strong> ${killerCard}</p>`;
+        document.getElementById('end-details').innerHTML = `<p><strong>আসল খুনি ছিল:</strong> ${killer.username}</p><p><strong>আসল হাতিয়ার ছিল:</strong> ${killerCard}</p>`;
         document.getElementById('round-leaderboard-box').innerHTML = leaderboard.map((p, i) => `<div>#${i+1} 👤 ${p.username} - ${p.points} Pts</div>`).join('');
         
         const nextBtn = document.getElementById('btn-next-round');
@@ -290,6 +476,13 @@
             nextBtn.innerText = "হোস্টের শুরুর অপেক্ষা... ⏳"; 
         }
     });
+
+    function showMyRoleAgain() {
+        if (myRoleData) {
+            let roleMsg = `আপনার গোপন রোল: ${myRoleData.role === 'Killer' ? 'খুনি 🔪' : myRoleData.role === 'Goyenda' ? 'গোয়েন্দা 🔍' : 'সন্দেহভাজন 👤'}`;
+            alert(`${roleMsg}\nআপনার চরিত্র: ${myRoleData.assignedSuspectName || 'সন্দেহভাজন'}`);
+        }
+    }
 
     function switchScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
