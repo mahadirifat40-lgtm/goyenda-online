@@ -83,11 +83,17 @@
 
     <!-- SCREEN 1: LOBBY JOIN -->
     <div id="screen-lobby-join" class="screen">
-        <h3 style="margin-bottom:15px;">🚪 গেমে প্রবেশ করুন (<span id="user-display-name" style="color:var(--accent-gold)"></span>)</h3>
-        <label>রুম কোড</label>
-        <input type="text" id="room-input" placeholder="উদা: DETECTIVE">
-        <button class="btn" id="btn-join">রুমে প্রবেশ করুন 🚀</button>
-        <button class="btn btn-secondary" id="btn-go-admin" style="display:none;">⚙️ এডমিন প্যানেল খুলুন</button>
+       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+    <h3>🚪 গেমে প্রবেশ করুন</h3>
+    <button class="btn btn-danger" id="btn-logout" style="width: auto; padding: 6px 12px; margin: 0;">Log Out 🏃‍♂️</button>
+</div>
+<div style="margin-bottom: 15px; font-size: 0.95rem; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px;">
+    প্লেয়ার: <span id="user-display-name" style="color:var(--accent-gold); font-weight: bold;"></span>
+</div>
+<label>রুম কোড</label>
+<input type="text" id="room-input" placeholder="উদা: DETECTIVE">
+<button class="btn" id="btn-join">রুমে প্রবেশ করুন 🚀</button>
+<button class="btn btn-secondary" id="btn-go-admin" style="display:none;">⚙️ এডমিন প্যানেল খুলুন</button>
         
         <!-- Live Online Facebook Friends Section -->
         <div id="fb-friends-section" class="points-tab" style="display:none; margin-top: 20px;">
