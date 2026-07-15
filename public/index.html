@@ -39,7 +39,7 @@
             border: 2px solid rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             padding: 20px;
-            min-height: 520px;
+            min-height: 580px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -47,12 +47,12 @@
             overflow: hidden;
         }
 
-        /* মাঝখানের গোয়েন্দা জোন */
+        /* মাঝখানের গোয়েন্দা জোন (গোলটেবিল ডিজাইন) */
         .goyenda-center {
             position: absolute;
-            width: 140px;
-            height: 140px;
-            background: radial-gradient(circle, rgba(0, 136, 255, 0.25), rgba(0, 70, 150, 0.8));
+            width: 130px;
+            height: 130px;
+            background: radial-gradient(circle, rgba(0, 136, 255, 0.2), rgba(0, 70, 150, 0.75));
             border: 3px double var(--detective-blue);
             border-radius: 50%;
             display: flex;
@@ -64,10 +64,18 @@
             box-shadow: 0 0 20px rgba(0, 136, 255, 0.5);
             padding: 10px;
         }
-        .goyenda-center h4 { color: #fff; font-size: 1.1rem; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .goyenda-center span { font-size: 0.8rem; color: var(--accent-gold); font-weight: bold; }
+        .goyenda-center img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 4px;
+        }
+        .goyenda-center h4 { color: #fff; font-size: 0.95rem; margin-bottom: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .goyenda-center span { font-size: 0.75rem; color: var(--accent-gold); font-weight: bold; }
 
-        /* চারপাশের প্লেয়ারদের গ্রিড লেআউট (স্কেচ অনুকরণে) */
+        /* চারপাশের প্লেয়ারদের গ্রিড লেআউট */
         .players-circle-layout {
             position: absolute;
             width: 100%;
@@ -79,7 +87,7 @@
                 "bottom bottom";
             justify-content: space-between;
             align-content: space-between;
-            padding: 15px;
+            padding: 12px;
         }
 
         .player-node {
@@ -87,10 +95,10 @@
             flex-direction: column;
             align-items: center;
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 8px;
             border-radius: 12px;
-            width: 160px;
+            width: 180px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: all 0.3s;
         }
@@ -105,47 +113,81 @@
         .player-node-right { grid-area: right; margin-top: auto; margin-bottom: auto; }
         .player-node-bottom { grid-area: bottom; margin: 0 auto; }
 
-        .player-badge {
+        /* প্লেয়ার ট্যাগ উইথ অবতার */
+        .player-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             background: rgba(0,0,0,0.6);
             border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: #fff;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
+            padding: 4px 8px;
             width: 100%;
-            text-overflow: ellipsis;
-            white-overflow: nowrap;
-            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
             margin-bottom: 8px;
         }
-        .player-badge.role-goyenda { color: var(--detective-blue); border-color: var(--detective-blue); }
-        .player-badge.role-killer { color: var(--accent-crimson); border-color: var(--accent-crimson); }
+        .player-header img {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--accent-gold);
+        }
+        .player-title-text {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #fff;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            flex: 1;
+        }
 
-        /* কার্ডের মিনিমাল ডিজাইন (স্কেচের ৩টি কার্ডের ঘর) */
+        /* ৩টি ভিজ্যুয়াল কার্ড রো */
         .cards-row {
             display: flex;
-            gap: 5px;
+            gap: 6px;
             justify-content: center;
             width: 100%;
         }
+        
+        /* সম্পূর্ণ কার্ড গেম ভাইব ডিজাইন */
         .mini-card {
             flex: 1;
             aspect-ratio: 2/3;
-            background: linear-gradient(145deg, #1d2331, #0f131a);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 4px;
-            font-size: 0.7rem;
-            padding: 4px 2px;
-            text-align: center;
-            word-break: break-word;
+            background: linear-gradient(145deg, #181d28, #0a0d14);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            overflow: hidden;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .mini-card-img {
+            width: 100%;
+            height: 45%;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .mini-card-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
-            color: #ddd;
+            align-items: center;
+            padding: 2px;
+            text-align: center;
+        }
+        .mini-card-icon {
+            font-size: 0.9rem;
+            margin-bottom: 1px;
+        }
+        .mini-card-name {
+            font-size: 0.62rem;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            color: #e2e8f0;
+            line-height: 1.1;
+            word-break: break-word;
         }
 
         /* ক্লু বক্স */
@@ -196,16 +238,20 @@
         <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 10px;">রুম থেকে বের হন 🚪</button>
     </div>
 
-    <!-- SCREEN 3: SECRET ROLE NOTIFICATION (POPUP OR MINI VIEW) -->
+    <!-- SCREEN 3: SECRET ROLE NOTIFICATION -->
     <div id="screen-reveal" class="screen" style="text-align: center;">
         <div style="background: rgba(255,255,255,0.03); border: 2px dashed var(--accent-gold); padding: 20px; border-radius: 12px; margin-bottom: 15px;">
+            <div style="margin-bottom: 15px;">
+                <!-- ইউজারের ক্যারেক্টার অবতার শো করার গোল উইন্ডো -->
+                <img id="reveal-avatar-img" src="" style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent-gold); background: rgba(255,255,255,0.1); padding: 5px;" alt="Avatar">
+            </div>
             <h2 id="my-role-reveal-title" style="color: var(--accent-gold); margin-bottom: 8px;"></h2>
             <p id="my-role-reveal-desc" style="color: var(--muted-gray); font-size: 0.9rem;"></p>
             
             <!-- খুনি কার্ড সিলেকশন করার জোন -->
             <div id="killer-selection-zone" style="display:none; margin-top: 15px;">
                 <label>🗡️ আপনার হত্যার হাতিয়ার নির্ধারণ করুন (অন্যরা দেখবে না):</label>
-                <div id="killer-cards-options"></div>
+                <div id="killer-cards-options" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:10px;"></div>
             </div>
         </div>
         <p style="font-size:0.85rem; color:var(--muted-gray);" id="waiting-status-text">খুনির কার্ড সিলেক্ট করার জন্য অপেক্ষা করা হচ্ছে...</p>
@@ -226,7 +272,7 @@
 
     <!-- SCREEN 5: INVESTIGATION BOARD (THE CIRCULAR BOARD SCREEN) -->
     <div id="screen-investigation" class="screen">
-        <!-- ক্লু হাব (ফরেনসিক ফাইল) -->
+        <!-- ক্লু হাব -->
         <div class="clues-hud">
             <div style="font-weight: bold; color: var(--detective-blue);">🕵️‍♂️ আলামত বা ক্লু সমূহ:</div>
             <div id="live-clues-hud-box" class="clues-grid-hud">
@@ -236,18 +282,17 @@
             </div>
         </div>
 
-        <!-- বৃত্তাকার বা অর্গানাইজড বোর্ড লেআউট (লাইভ) -->
+        <!-- বৃত্তাকার বোর্ড লেআউট -->
         <div class="table-board" id="game-table-board">
             <!-- Center Goyenda Spot -->
             <div class="goyenda-center">
+                <img id="board-goyenda-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss" alt="Goyenda">
                 <h4 id="board-goyenda-name">তদন্তকারী</h4>
                 <span>গোয়েন্দা 🔍</span>
             </div>
 
-            <!-- Players surrounding grid (will generate 4 nodes maximum) -->
-            <div class="players-circle-layout" id="players-circle-container">
-                <!-- Dynamic Nodes will inject here -->
-            </div>
+            <!-- Players surrounding grid -->
+            <div class="players-circle-layout" id="players-circle-container"></div>
         </div>
 
         <div style="display:flex; gap: 10px;">
@@ -281,7 +326,7 @@
 <script>
     const socket = io();
     let currentRoom = null, loggedInUser = null;
-    let myRoleData = null; // নিজের রোল মনে রাখার জন্য
+    let myRoleData = null; 
 
     // --- Join Game Logic ---
     document.getElementById('btn-join-room').addEventListener('click', () => {
@@ -347,7 +392,7 @@
                 switchScreen('screen-goyenda-clues');
                 const killer = room.players.find(p => p.role === 'Killer');
                 document.getElementById('intel-killer').innerText = killer.username;
-                document.getElementById('intel-card').innerText = room.killerCard;
+                document.getElementById('intel-card').innerText = `${room.killerCard.icon} ${room.killerCard.name}`;
             } else {
                 switchScreen('screen-reveal');
                 document.getElementById('my-role-reveal-title').innerText = "🔍 ক্লু রেডি হচ্ছে...";
@@ -364,6 +409,10 @@
         const titleEl = document.getElementById('my-role-reveal-title');
         const descEl = document.getElementById('my-role-reveal-desc');
         const killerZone = document.getElementById('killer-selection-zone');
+        const avatarEl = document.getElementById('reveal-avatar-img');
+
+        // ইউজারের অবতার ইমেজ সেট করা
+        avatarEl.src = me.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=suspect";
 
         if(me.role === 'Goyenda') {
             titleEl.innerText = '🔍 প্রধান গোয়েন্দা';
@@ -377,8 +426,11 @@
             killerZone.style.display = 'block';
             
             const options = document.getElementById('killer-cards-options');
+            // খুনির কার্ডগুলোতেও সুন্দর আইকন দেখাবে
             options.innerHTML = me.cards.map(c => `
-                <button class="btn" style="margin-top:5px; background:var(--accent-crimson);" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card:'${c}'})">🗡️ ${c}</button>
+                <button class="btn" style="margin-top:5px; background:var(--accent-crimson); font-size:0.85rem;" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card: ${JSON.stringify(c)}})">
+                    ${c.icon} ${c.name}
+                </button>
             `).join('');
         } else {
             titleEl.innerText = '👤 সন্দেহভাজন';
@@ -388,46 +440,55 @@
         }
     }
 
-    // --- গোল টেবিল ও সবার কার্ড দেখতে পাওয়ার আর্কিটেকচার ---
+    // --- গোল টেবিল আর্কিটেকচার (প্রতিটি কার্ডে ছবি ও আইকন সহ) ---
     function renderInvestigationBoard(room) {
-        // ক্লু আপডেট
         if (room.clues && room.clues.length > 0) {
             document.getElementById('live-clues-hud-box').innerHTML = room.clues.map(c => `
                 <div><strong>${c.label}:</strong> <span style="color:var(--accent-gold)">${c.val}</span></div>
             `).join('');
         }
 
-        // গোয়েন্দার নাম সেন্টারে বসানো
         const goyenda = room.players.find(p => p.role === 'Goyenda');
-        document.getElementById('board-goyenda-name').innerText = goyenda ? goyenda.username : "তদন্তকারী";
+        if (goyenda) {
+            document.getElementById('board-goyenda-name').innerText = goyenda.username;
+            document.getElementById('board-goyenda-img').src = goyenda.avatar || "https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss";
+        }
 
-        // চারপাশের বাকি প্লেয়ারদের (Goyenda বাদে) স্কেচের মতো ৪টি দিকে বসানো
         const suspectPlayers = room.players.filter(p => p.role !== 'Goyenda');
         const container = document.getElementById('players-circle-container');
-        container.innerHTML = ''; // রিফ্রেশ
+        container.innerHTML = ''; 
 
-        // ৪টি পজিশন এসাইন করা
         const positions = ['top', 'left', 'right', 'bottom'];
 
         suspectPlayers.forEach((p, idx) => {
             const posClass = `player-node-${positions[idx % 4]}`;
             const isMe = (p.username === loggedInUser) ? 'active-me' : '';
             
-            // ৩টি মিনি কার্ড তৈরি করা (যা সবাই যেকোনো সময় দেখতে পাবে)
+            // ৩টি মিনি ভিজ্যুয়াল কার্ড তৈরি (যা সবাই দেখতে পাবে)
+            // কার্ডের ভেতরে ছবি (img), আইকন (icon), এবং নাম (name) জেনারেট হচ্ছে
             const cardsHtml = p.cards.map(card => `
-                <div class="mini-card">${card}</div>
+                <div class="mini-card">
+                    <img class="mini-card-img" src="${card.img}" alt="${card.name}">
+                    <div class="mini-card-info">
+                        <span class="mini-card-icon">${card.icon}</span>
+                        <span class="mini-card-name">${card.name}</span>
+                    </div>
+                </div>
             `).join('');
 
             const playerNodeHtml = `
                 <div class="player-node ${posClass} ${isMe}">
-                    <div class="player-badge">${p.username}</div>
+                    <div class="player-header">
+                        <img src="${p.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=avatar'}" alt="Avatar">
+                        <div class="player-title-text">${p.username} (${p.assignedSuspectName})</div>
+                    </div>
                     <div class="cards-row">${cardsHtml}</div>
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', playerNodeHtml);
         });
 
-        // ভোটিং প্যানেলের লিস্ট আপডেট করা
+        // ভোটিং আপডেট
         document.getElementById('vote-killer-select').innerHTML = suspectPlayers.map(p => `
             <option value="${p.id}">${p.username} (${p.assignedSuspectName})</option>
         `).join('');
@@ -435,7 +496,7 @@
         let allCardsHtml = "";
         suspectPlayers.forEach(p => {
             p.cards.forEach(c => {
-                allCardsHtml += `<option value="${c}">${c} (${p.username}-এর কার্ড)</option>`;
+                allCardsHtml += `<option value="${c.name}">${c.icon} ${c.name} (${p.username})</option>`;
             });
         });
         document.getElementById('vote-card-select').innerHTML = allCardsHtml;
@@ -455,8 +516,8 @@
     
     document.getElementById('btn-submit-vote').addEventListener('click', () => {
         const accusedId = document.getElementById('vote-killer-select').value;
-        const accusedCard = document.getElementById('vote-card-select').value;
-        socket.emit('submitAccusation', { roomCode: currentRoom, accusedId, accusedCard });
+        const accusedCardName = document.getElementById('vote-card-select').value;
+        socket.emit('submitAccusation', { roomCode: currentRoom, accusedId, accusedCardName });
     });
 
     socket.on('gameOver', ({ win, killer, killerCard, roomData, leaderboard }) => {
@@ -464,7 +525,10 @@
         const title = document.getElementById('end-title');
         title.innerText = win ? "🏆 গোয়েন্দা জিতেছে!" : "💀 খুনি জিতে গেছে!";
         title.style.color = win ? "#48bb78" : "var(--accent-crimson)";
-        document.getElementById('end-details').innerHTML = `<p><strong>আসল খুনি ছিল:</strong> ${killer.username}</p><p><strong>আসল হাতিয়ার ছিল:</strong> ${killerCard}</p>`;
+        document.getElementById('end-details').innerHTML = `
+            <p><strong>আসল খুনি ছিল:</strong> ${killer.username}</p>
+            <p><strong>আসল হাতিয়ার ছিল:</strong> ${killerCard.icon} ${killerCard.name}</p>
+        `;
         document.getElementById('round-leaderboard-box').innerHTML = leaderboard.map((p, i) => `<div>#${i+1} 👤 ${p.username} - ${p.points} Pts</div>`).join('');
         
         const nextBtn = document.getElementById('btn-next-round');
