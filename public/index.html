@@ -26,9 +26,8 @@
         .screen.active { display: block; }
         .btn { background: linear-gradient(135deg, var(--accent-crimson), #b31c28); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; }
         .btn-secondary { background: linear-gradient(135deg, #4a5568, #2d3748); }
-        .btn-danger { background: #dc3545; padding: 6px 12px; font-size: 0.85rem; width: auto; margin: 0;}
-        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background-color: rgba(20, 24, 33, 0.85); color: white; margin-bottom: 12px; }
-        label { color: var(--accent-gold); font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background-color: rgba(20, 24, 33, 0.85); color: white; margin-bottom: 15px; font-size: 1rem; }
+        label { color: var(--accent-gold); font-weight: 600; font-size: 0.95rem; display: block; margin-bottom: 6px; }
         .points-tab { background: rgba(15, 20, 30, 0.85); border: 1px solid rgba(226, 177, 60, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 20px; }
         .clue-tag { background: rgba(0, 136, 255, 0.15); padding: 12px; border-radius: 8px; border-left: 5px solid var(--detective-blue); margin-bottom: 8px;}
         .player-hand-display { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px;}
@@ -36,28 +35,10 @@
         .hand-card { padding: 8px 4px; background: rgba(20, 24, 33, 0.9); border-radius: 6px; text-align: center; font-size: 0.8rem; font-weight: bold; }
         .footer-credit { text-align: center; margin-top: 25px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.4); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; }
         .footer-credit span { color: var(--accent-crimson); font-weight: bold; }
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-        .admin-table th, .admin-table td { padding: 10px; border: 1px solid rgba(255,255,255,0.1); text-align: left; }
-        .admin-table th { background: rgba(255,255,255,0.05); color: var(--accent-gold); }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-
-<!-- Meta Facebook SDK -->
-<div id="fb-root"></div>
-<script async defer crossorigin="anonymous" src="https://connect.facebook.net/bn_IN/sdk.js"></script>
-
-<script>
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId      : '1503355397760821', // আপনার অ্যাপ আইডি ইন্টিগ্রেটেড
-      cookie     : true,
-      xfbml      : true,
-      version    : 'v18.0'
-    });
-  };
-</script>
 
 <div class="game-container">
     <h1>🩸 Goyendagiri Online 🔍</h1>
@@ -65,53 +46,33 @@
 
     <!-- LIVE SCOREBOARD -->
     <div id="global-scoreboard" class="points-tab" style="display: none;">
-        <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 5px;">📊 লাইভ স্কোরবোর্ড</div>
+        <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 5px;">📊 রুম স্কোরবোর্ড (এই ম্যাচ)</div>
         <div id="points-list-box" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"></div>
     </div>
 
-    <!-- SCREEN 0: LOGIN & REGISTER -->
-    <div id="screen-auth" class="screen active">
-        <h3 id="auth-title" style="margin-bottom: 15px;">🔐 অ্যাকাউন্ট লগইন</h3>
-        <input type="text" id="auth-user" placeholder="ইউজারনেম">
-        <input type="password" id="auth-pass" placeholder="পাসওয়ার্ড">
-        <button class="btn" id="btn-auth-primary">লগইন করুন</button>
+    <!-- SCREEN 1: QUICK JOIN -->
+    <div id="screen-quick-join" class="screen active">
+        <label>🕵️‍♂️ আপনার সুন্দর নাম লিখুন</label>
+        <input type="text" id="username-input" placeholder="উদা: গোয়েন্দা লালু">
         
-        <button class="btn" id="btn-fb-login" style="background: #1877F2; margin-top: 15px;">🔵 Facebook দিয়ে লগইন করুন</button>
+        <label>🔑 রুম কোড (নতুন বা পুরনো)</label>
+        <input type="text" id="room-input" placeholder="উদা: DETECTIVE">
         
-        <p id="auth-toggle-text" style="text-align:center; margin-top:15px; font-size:0.9rem; cursor:pointer; color:var(--detective-blue)">নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন</p>
-    </div>
-
-    <!-- SCREEN 1: LOBBY JOIN -->
-    <div id="screen-lobby-join" class="screen">
-       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-    <h3>🚪 গেমে প্রবেশ করুন</h3>
-    <button class="btn btn-danger" id="btn-logout" style="width: auto; padding: 6px 12px; margin: 0;">Log Out 🏃‍♂️</button>
-</div>
-<div style="margin-bottom: 15px; font-size: 0.95rem; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px;">
-    প্লেয়ার: <span id="user-display-name" style="color:var(--accent-gold); font-weight: bold;"></span>
-</div>
-<label>রুম কোড</label>
-<input type="text" id="room-input" placeholder="উদা: DETECTIVE">
-<button class="btn" id="btn-join">রুমে প্রবেশ করুন 🚀</button>
-<button class="btn btn-secondary" id="btn-go-admin" style="display:none;">⚙️ এডমিন প্যানেল খুলুন</button>
-        
-        <!-- Live Online Facebook Friends Section -->
-        <div id="fb-friends-section" class="points-tab" style="display:none; margin-top: 20px;">
-            <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 8px;">🟢 অনলাইনে থাকা ফেসবুক বন্ধুরা</div>
-            <div id="fb-friends-list"></div>
-        </div>
+        <button class="btn" id="btn-join-room">রুমে প্রবেশ করুন 🚀</button>
     </div>
 
     <!-- SCREEN 2: WAITING LOBBY -->
     <div id="screen-lobby-wait" class="screen">
         <h3>🔑 রুম কোড: <span id="display-room-code" style="color:var(--accent-gold)"></span></h3>
+        <p style="color: var(--muted-gray); font-size: 0.85rem; margin-top: 5px;">অন্তত ৩ জন প্লেয়ার দরকার খেলা শুরুর জন্য।</p>
         <div id="lobby-player-list" style="margin: 15px 0;"></div>
         <button class="btn" id="btn-start" style="display:none;">খেলা শুরু করুন 🎮</button>
+        <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 10px;">রুম থেকে বের হন 🚪</button>
     </div>
 
     <!-- SCREEN 3: ROLE REVEAL -->
     <div id="screen-reveal" class="screen">
-        <div class="reveal-box" id="reveal-box" onclick="toggleSecret()">👁️ গোপন পরিচয় দেখতে ট্যাপ করুন</div>
+        <div class="reveal-box" id="reveal-box" onclick="toggleSecret()" style="background: rgba(255,255,255,0.05); border: 2px dashed var(--accent-gold); padding: 25px; text-align: center; border-radius: 12px; cursor: pointer; font-weight: bold; margin-bottom: 15px;">👁️ গোপন পরিচয় দেখতে ট্যাপ করুন</div>
         <div id="secret-content" style="display:none; text-align:center;">
             <h2 id="my-role" style="margin-bottom:10px;"></h2>
             <h4 id="my-suspect-name" style="color:var(--accent-gold); margin-bottom:10px;"></h4>
@@ -159,18 +120,7 @@
         <div id="end-details" style="background:rgba(0,0,0,0.4); padding:15px; border-radius:10px; text-align:left; margin-bottom:15px;"></div>
         <div id="round-leaderboard-box" style="margin-bottom:15px; text-align:left;"></div>
         <button class="btn" id="btn-next-round">পরবর্তী রাউন্ড 🔄</button>
-    </div>
-
-    <!-- SCREEN 8: ADMIN DASHBOARD -->
-    <div id="screen-admin" class="screen">
-        <h3>⚙️ সিস্টেম এডমিন ড্যাশবোর্ড</h3>
-        <table class="admin-table">
-            <thead>
-                <tr><th>ইউজারনেম</th><th>পয়েন্ট</th><th>রোল</th><th>অ্যাকশন</th></tr>
-            </thead>
-            <tbody id="admin-users-list"></tbody>
-        </table>
-        <button class="btn btn-secondary" onclick="switchScreen('screen-lobby-join')" style="margin-top:15px;">লবি মেনুতে ফিরুন</button>
+        <button class="btn btn-secondary" onclick="leaveRoom()" style="margin-top: 10px;">লবিতে ফিরুন 🚪</button>
     </div>
 
     <div class="footer-credit">Developed by <span>Mahadi Rifat</span></div>
@@ -178,171 +128,55 @@
 
 <script>
     const socket = io();
-    let currentRoom = null, loggedInUser = null, userProfilePic = '', isLoginMode = true;
+    let currentRoom = null, loggedInUser = null;
 
-    // --- Manual Login / Register Logic ---
-    document.getElementById('auth-toggle-text').addEventListener('click', () => {
-        isLoginMode = !isLoginMode;
-        document.getElementById('auth-title').innerText = isLoginMode ? "🔐 অ্যাকাউন্ট লগইন" : "📝 নতুন অ্যাকাউন্ট রেজিস্ট্রেশন";
-        document.getElementById('btn-auth-primary').innerText = isLoginMode ? "লগইন করুন" : "অ্যাকাউন্ট তৈরি করুন";
-        document.getElementById('auth-toggle-text').innerText = isLoginMode ? "নতুন অ্যাকাউন্ট তৈরি করতে এখানে ক্লিক করুন" : "ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন";
-    });
+    // --- Join Game Logic ---
+    document.getElementById('btn-join-room').addEventListener('click', () => {
+        const username = document.getElementById('username-input').value.trim();
+        const roomCode = document.getElementById('room-input').value.trim();
 
-    document.getElementById('btn-auth-primary').addEventListener('click', async () => {
-        const username = document.getElementById('auth-user').value;
-        const password = document.getElementById('auth-pass').value;
-        const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
-
-        const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-
-        if (data.error) {
-            alert(data.error);
-        } else {
-            alert(data.message || "সফল হয়েছে!");
-            if (isLoginMode) {
-                loggedInUser = data.username;
-                userProfilePic = '';
-                document.getElementById('user-display-name').innerText = loggedInUser;
-                switchScreen('screen-lobby-join');
-                if (data.role === 'admin') document.getElementById('btn-go-admin').style.display = 'block';
-            } else {
-                isLoginMode = true;
-                document.getElementById('auth-toggle-text').click();
-            }
-        }
-    });
-
-    // --- Facebook Login & Invite Logic ---
-    document.getElementById('btn-fb-login').addEventListener('click', () => {
-        FB.login(function(response) {
-            if (response.authResponse) {
-                FB.api('/me?fields=name,picture.width(100).height(100)', async function(userInfo) {
-                    loggedInUser = userInfo.name;
-                    userProfilePic = userInfo.picture.data.url;
-                    
-                    // সার্ভার ডেটাবেসে ফেসবুক অ্যাকাউন্ট সিঙ্ক
-                    const res = await fetch('/api/auth/facebook', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: loggedInUser, profilePic: userProfilePic })
-                    });
-                    const dbData = await res.json();
-
-                    document.getElementById('user-display-name').innerHTML = `
-                        <img src="${userProfilePic}" style="width:28px; height:28px; border-radius:50%; vertical-align:middle; margin-right:6px; border:1px solid var(--accent-gold);"> 
-                        ${loggedInUser} (${dbData.points} Pts)
-                    `;
-                    
-                    // ফেসবুক ফ্রেন্ডলিস্ট হ্যান্ডলিং (গেম খেলা বন্ধুদের জন্য)
-                    FB.api('/me/friends?fields=name,picture', function(friendsResponse) {
-                        const fbFriends = friendsResponse.data || [];
-                        socket.emit('fbUserOnline', { username: loggedInUser, profilePic: userProfilePic, friends: fbFriends });
-                    });
-
-                    switchScreen('screen-lobby-join');
-                    document.getElementById('fb-friends-section').style.display = 'block';
-                });
-            } else {
-                alert("ফেসবুক লগইন বাতিল করা হয়েছে।");
-            }
-        }, {scope: 'public_profile'});
-    });
-
-    // লাইভ অনলাইন বন্ধুদের আপডেট করা
-    socket.on('updateOnlineFriends', (onlineFriends) => {
-        const list = document.getElementById('fb-friends-list');
-        if(!onlineFriends || onlineFriends.length === 0) {
-            list.innerHTML = `<p style="font-size:0.85rem; color:var(--muted-gray); text-align:center; padding:5px;">কোনো বন্ধু এই মুহূর্তে গেমটিতে অনলাইনে নেই।</p>`;
+        if(!username || !roomCode) {
+            alert("দয়া করে আপনার নাম এবং রুম কোড দুটোই লিখুন!");
             return;
         }
-        list.innerHTML = onlineFriends.map(f => `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; margin-bottom:6px;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <img src="${f.profilePic}" style="width:25px; height:25px; border-radius:50%; border:1px solid #1877F2;">
-                    <span style="font-size:0.9rem;">${f.username}</span>
-                </div>
-                <button class="btn btn-secondary" style="width:auto; padding:4px 10px; font-size:0.75rem; margin:0;" onclick="sendRoomInvite('${f.socketId}')">ইনভাইট ✉️</button>
-            </div>
-        `).join('');
+
+        loggedInUser = username;
+        currentRoom = roomCode.toUpperCase();
+        
+        socket.emit('joinRoom', { roomCode: currentRoom, username: loggedInUser });
+        switchScreen('screen-lobby-wait');
+        document.getElementById('global-scoreboard').style.display = 'block';
     });
 
-    window.sendRoomInvite = (targetSocketId) => {
-        if(!currentRoom) {
-            alert("বন্ধুকে ইনভাইট করার আগে দয়া করে একটি রুমে প্রবেশ করুন!");
-            return;
-        }
-        socket.emit('sendRoomInvite', { targetSocketId, roomCode: currentRoom, sender: loggedInUser });
-        alert("রুম ইনভাইটেশন পাঠানো হয়েছে!");
-    };
+    function leaveRoom() {
+        location.reload(); // পেজ রিলোড করে সহজে রুম থেকে সম্পূর্ণ বের হয়ে যাওয়া যায়
+    }
 
-    socket.on('receiveRoomInvite', ({ roomCode, sender }) => {
-        if(confirm(`🕵️‍♂️ ${sender} আপনাকে রুম ${roomCode}-এ গেম খেলার জন্য ইনভাইট করেছে! আপনি কি জয়েন করতে চান?`)) {
-            document.getElementById('room-input').value = roomCode;
-            currentRoom = roomCode.toUpperCase();
-            socket.emit('joinRoom', { roomCode, username: loggedInUser, peerId: 'peer-id', profilePic: userProfilePic });
-            switchScreen('screen-lobby-wait');
-            document.getElementById('global-scoreboard').style.display = 'block';
-        }
-    });
-
-    // --- Admin Dashboard logic ---
-    document.getElementById('btn-go-admin').addEventListener('click', async () => {
-        switchScreen('screen-admin');
-        const res = await fetch('/api/admin/users');
-        const users = await res.json();
-        const tbody = document.getElementById('admin-users-list');
-        tbody.innerHTML = users.map(u => `
-            <tr>
-                <td>${u.username}</td>
-                <td>${u.points}</td>
-                <td>${u.role}</td>
-                <td>
-                    ${u.role !== 'admin' ? `<button class="btn btn-danger" onclick="deleteUser('${u._id}')">ডিলিট</button>` : 'N/A'}
-                </td>
-            </tr>
-        `).join('');
-    });
-
-    window.deleteUser = async (id) => {
-        if(confirm("আপনি কি নিশ্চিতভাবে এই অ্যাকাউন্টটি মুছে ফেলতে চান?")) {
-            await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
-            document.getElementById('btn-go-admin').click();
-        }
-    };
-
-    // --- Game Logic Flow ---
-    document.getElementById('btn-join').addEventListener('click', () => {
-        const roomCode = document.getElementById('room-input').value;
-        if(roomCode && loggedInUser) {
-            currentRoom = roomCode.toUpperCase();
-            socket.emit('joinRoom', { roomCode, username: loggedInUser, peerId: 'peer-id', profilePic: userProfilePic });
-            switchScreen('screen-lobby-wait');
-            document.getElementById('global-scoreboard').style.display = 'block';
-        }
-    });
-
+    // --- Socket Listeners ---
     socket.on('roomUpdated', (room) => {
         document.getElementById('display-room-code').innerText = room.code;
+        
+        // ম্যাচ স্কোরবোর্ড আপডেট
         document.getElementById('points-list-box').innerHTML = room.players.map(p => `
-            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:6px; font-size:0.85rem; display:flex; align-items:center; gap:5px;">
-                ${p.profilePic ? `<img src="${p.profilePic}" style="width:18px; height:18px; border-radius:50%;">` : '👤'}
-                <span>${p.username}: <strong>${p.points} Pts</strong></span>
+            <div style="background:rgba(255,255,255,0.05); padding:6px; border-radius:6px; font-size:0.85rem;">
+                👤 ${p.username}: <strong>${p.points} Pts</strong>
             </div>
         `).join('');
         
+        // ওয়েটিং লিস্ট আপডেট
         const list = document.getElementById('lobby-player-list');
         list.innerHTML = room.players.map(p => `
-            <div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:6px; border-radius:6px; display:flex; align-items:center; gap:8px;">
-                ${p.profilePic ? `<img src="${p.profilePic}" style="width:24px; height:24px; border-radius:50%;">` : '👤'}
-                <span>${p.username}</span>
+            <div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:6px; border-radius:6px;">
+                👤 ${p.username}
             </div>
         `).join('');
-        if(room.players[0].username === loggedInUser && room.players.length >= 3) document.getElementById('btn-start').style.display = 'block';
+        
+        // প্রথম প্লেয়ারকে হোস্ট বানিয়ে "শুরু" বাটন দেখানো (মিনিমাম ৩ জন হলে)
+        if(room.players[0].username === loggedInUser && room.players.length >= 3) {
+            document.getElementById('btn-start').style.display = 'block';
+        } else {
+            document.getElementById('btn-start').style.display = 'none';
+        }
     });
 
     document.getElementById('btn-start').addEventListener('click', () => socket.emit('startGame', currentRoom));
@@ -350,7 +184,10 @@
 
     socket.on('gameUpdated', (room) => {
         const me = room.players.find(p => p.username === loggedInUser);
-        if (room.state === 'role_reveal') { switchScreen('screen-reveal'); setupRevealScreen(me); }
+        if (room.state === 'role_reveal') { 
+            switchScreen('screen-reveal'); 
+            setupRevealScreen(me); 
+        }
         else if (room.state === 'goyenda_clues') {
             if (me.role === 'Goyenda') {
                 switchScreen('screen-goyenda');
@@ -362,7 +199,10 @@
                 document.getElementById('reveal-box').innerText = "🔍 প্রধান গোয়েন্দা আলামত সাজাচ্ছেন...";
                 document.getElementById('secret-content').style.display = 'none';
             }
-        } else if (room.state === 'investigation') { switchScreen('screen-investigation'); renderInvestigation(room); }
+        } else if (room.state === 'investigation') { 
+            switchScreen('screen-investigation'); 
+            renderInvestigation(room); 
+        }
     });
 
     let secretVisible = false;
@@ -373,31 +213,39 @@
     };
 
     function setupRevealScreen(me) {
-        secretVisible = false; toggleSecret(); toggleSecret();
+        secretVisible = false; 
+        document.getElementById('secret-content').style.display = 'none';
+        document.getElementById('reveal-box').innerText = "👁️ গোপন পরিচয় দেখতে ট্যাপ করুন";
+        
         const roleEl = document.getElementById('my-role');
+        const instEl = document.getElementById('my-instruction');
+        
         if(me.role === 'Goyenda') {
-            roleEl.innerText = '🔍 প্রধান গোয়েন্দা'; roleEl.style.color = 'var(--detective-blue)';
+            roleEl.innerText = '🔍 প্রধান গোয়েন্দা'; 
+            roleEl.style.color = 'var(--detective-blue)';
+            instEl.innerText = "আপনি মামলার প্রধান তদন্তকারী। খুনি নিজে কার্ড সিলেক্ট করার পর আপনার ড্যাশবোর্ডে ক্লু অপশন খুলে যাবে।";
             document.getElementById('killer-selection-zone').style.display = 'none';
         } else if (me.role === 'Killer') {
-            roleEl.innerText = '🔪 আপনি খুনি (Killer)'; roleEl.style.color = 'var(--accent-crimson)';
+            roleEl.innerText = '🔪 আপনি খুনি (Killer)'; 
+            roleEl.style.color = 'var(--accent-crimson)';
+            instEl.innerText = "নিচের যেকোনো একটি কার্ড সিলেক্ট করে আপনার অপরাধের হাতিয়ার নির্ধারণ করুন:";
             const zone = document.getElementById('killer-cards-options');
             document.getElementById('killer-selection-zone').style.display = 'block';
             zone.innerHTML = me.cards.map(c => `<div class="btn" style="margin-top:5px;" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card:'${c}'})">🗡️ ${c}</div>`).join('');
         } else {
-            roleEl.innerText = '👤 সন্দেহভাজন'; roleEl.style.color = '#fff';
+            roleEl.innerText = '👤 সন্দেহভাজন'; 
+            roleEl.style.color = '#fff';
+            instEl.innerText = "আপনি একজন নিরপরাধ নাগরিক। গোয়েন্দাকে সাহায্য করুন খুনি এবং সঠিক হাতিয়ার শনাক্ত করতে।";
             document.getElementById('killer-selection-zone').style.display = 'none';
         }
-        document.getElementById('my-suspect-name').innerText = me.assignedSuspectName || '';
+        document.getElementById('my-suspect-name').innerText = "আপনার চরিত্র: " + (me.assignedSuspectName || 'সন্দেহভাজন');
     }
 
     function renderInvestigation(room) {
         document.getElementById('live-clues-box').innerHTML = room.clues.map(c => `<div class="clue-tag"><strong>${c.label}:</strong> ${c.val}</div>`).join('');
         document.getElementById('live-board-box').innerHTML = room.players.filter(p => p.role !== 'Goyenda').map(p => `
             <div class="player-hand-display">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    ${p.profilePic ? `<img src="${p.profilePic}" style="width:20px; height:20px; border-radius:50%;">` : '👤'}
-                    <span>${p.username} [${p.assignedSuspectName}]</span>
-                </div>
+                <div style="font-weight: bold; margin-bottom: 4px;">👤 ${p.username} [${p.assignedSuspectName}]</div>
                 <div class="hand-cards">${p.cards.map(c => `<div class="hand-card">${c}</div>`).join('')}</div>
             </div>
         `).join('');
@@ -408,7 +256,17 @@
         document.getElementById('vote-card-select').innerHTML = cardsHtml;
     }
 
+    document.getElementById('btn-send-clues').addEventListener('click', () => {
+        const clues = [
+            { label: '📍 স্থান', val: document.getElementById('clue-1').value },
+            { label: '🧪 মৃত্যুর কারণ', val: document.getElementById('clue-2').value },
+            { label: '🧥 ঘটনাস্থল', val: document.getElementById('clue-3').value }
+        ];
+        socket.emit('submitClues', { roomCode: currentRoom, clues });
+    });
+
     document.getElementById('btn-go-vote').addEventListener('click', () => switchScreen('screen-voting'));
+    
     document.getElementById('btn-submit-vote').addEventListener('click', () => {
         const accusedId = document.getElementById('vote-killer-select').value;
         const accusedCard = document.getElementById('vote-card-select').value;
@@ -424,8 +282,13 @@
         document.getElementById('round-leaderboard-box').innerHTML = leaderboard.map((p, i) => `<div>#${i+1} 👤 ${p.username} - ${p.points} Pts</div>`).join('');
         
         const nextBtn = document.getElementById('btn-next-round');
-        if (roomData.players[0].username === loggedInUser) { nextBtn.disabled = false; nextBtn.innerText = "পরবর্তী রাউন্ড শুরু করুন 🔄"; }
-        else { nextBtn.disabled = true; nextBtn.innerText = "হোস্টের শুরুর অপেক্ষা... ⏳"; }
+        if (roomData.players[0].username === loggedInUser) { 
+            nextBtn.disabled = false; 
+            nextBtn.innerText = "পরবর্তী রাউন্ড শুরু করুন 🔄"; 
+        } else { 
+            nextBtn.disabled = true; 
+            nextBtn.innerText = "হোস্টের শুরুর অপেক্ষা... ⏳"; 
+        }
     });
 
     function switchScreen(id) {
