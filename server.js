@@ -10,11 +10,45 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
+
+// প্রতিটি সন্দেহভাজন চরিত্রের নাম, ইউনিক অবতার (PNG) এবং প্রতিটি কার্ডের জন্য ছবি ও আইকন সেট করা হয়েছে
 const SUSPECT_DECKS = [
-    { suspect: "ফেলুদা ফ্যান", cards: ["ডিজিটাল পিস্তল", "টেবিল ল্যাম্পের তার", "বিষাক্ত চারমিনার cigarette"] },
-    { suspect: "ব্যোমকেশ ভক্ত", cards: ["অ্যান্টিক খঞ্জর", "সায়ানাইড ক্যাপসুল", "পকেট ঘড়ির চেইন"] },
-    { suspect: "কাকাবাবু অনুসারী", cards: ["ক্রাচের তলোয়ার", "ক্লোরোফর্ম রুমাল", "ভারী কাঠের মূর্তি"] },
-    { suspect: "মাসুদ রানা স্পাই", cards: ["সাইলেন্সার রিভলভার", "বিষাক্ত লেজার পেন", "নাইলন সুতা"] }
+    { 
+        suspect: "ফেলুদা ফ্যান", 
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=feluda", // শার্লক/ডিটেক্টিভ স্টাইল অবতার
+        cards: [
+            { name: "ডিজিটাল পিস্তল", icon: "🔫", img: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=150&q=80" },
+            { name: "টেবিল ল্যাম্পের তার", icon: "🔌", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=150&q=80" },
+            { name: "বিষাক্ত চারমিনার", icon: "🚬", img: "https://images.unsplash.com/photo-1556997685-309989c1aa82?w=150&q=80" }
+        ] 
+    },
+    { 
+        suspect: "ব্যোমকেশ ভক্ত", 
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=byomkesh", 
+        cards: [
+            { name: "অ্যান্টিক খঞ্জর", icon: "🗡️", img: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=150&q=80" },
+            { name: "সায়ানাইড ক্যাপসুল", icon: "💊", img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&q=80" },
+            { name: "পকেট ঘড়ির চেইন", icon: "⛓️", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=150&q=80" }
+        ] 
+    },
+    { 
+        suspect: "কাকাবাবু অনুসারী", 
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=kakababu", 
+        cards: [
+            { name: "ক্রাচের তলোয়ার", icon: "⚔️", img: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=150&q=80" },
+            { name: "ক্লোরোফর্ম রুমাল", icon: "🧼", img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150&q=80" },
+            { name: "ভারী কাঠের মূর্তি", icon: "🗿", img: "https://images.unsplash.com/photo-1518929458119-e5bf444c30f4?w=150&q=80" }
+        ] 
+    },
+    { 
+        suspect: "মাসুদ রানা স্পাই", 
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=rana", 
+        cards: [
+            { name: "সাইলেন্সার রিভলভার", icon: "🔫", img: "https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=150&q=80" },
+            { name: "বিষাক্ত লেজার পেন", icon: "🖊️", img: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=150&q=80" },
+            { name: "নাইলন সুতা", icon: "🧵", img: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=150&q=80" }
+        ] 
+    }
 ];
 
 function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
@@ -30,11 +64,10 @@ io.on('connection', (socket) => {
             rooms[code] = { code, players: [], state: 'lobby', killerCard: null, clues: [] };
         }
         
-        // একই নামে কেউ অলরেডি রুমে থাকলে তাকে নতুন সকেটে কানেক্ট করা
         let existingPlayer = rooms[code].players.find(p => p.username.toLowerCase() === name.toLowerCase());
         if (!existingPlayer) {
             rooms[code].players.push({ 
-                id: socket.id, username: name, role: 'Suspect', cards: [], points: 0
+                id: socket.id, username: name, role: 'Suspect', cards: [], points: 0, assignedSuspectName: "", avatar: ""
             });
         } else {
             existingPlayer.id = socket.id;
@@ -63,17 +96,20 @@ io.on('connection', (socket) => {
 
         room.players.forEach(p => {
             if (p.id === goyenda.id) {
-                p.role = 'Goyenda'; p.cards = []; p.assignedSuspectName = "প্রধান গোয়েন্দা";
-            } else if (p.id === killer.id) {
-                p.role = 'Killer';
-                let deck = deckPool[deckIndex++];
-                p.assignedSuspectName = deck ? deck.suspect : "সন্দেহভাজন";
-                p.cards = deck ? [...deck.cards] : ["ছুরি", "দড়ি", "বিষ"];
+                p.role = 'Goyenda'; 
+                p.cards = []; 
+                p.assignedSuspectName = "প্রধান গোয়েন্দা";
+                p.avatar = "https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss"; // বিশেষ রোবট/গোয়েন্দা লোগো
             } else {
-                p.role = 'Suspect';
                 let deck = deckPool[deckIndex++];
+                if (p.id === killer.id) {
+                    p.role = 'Killer';
+                } else {
+                    p.role = 'Suspect';
+                }
                 p.assignedSuspectName = deck ? deck.suspect : "সন্দেহভাজন";
-                p.cards = deck ? [...deck.cards] : ["ছুরি", "দড়ি", "বিষ"];
+                p.avatar = deck ? deck.avatar : "https://api.dicebear.com/7.x/adventurer/svg?seed=suspect";
+                p.cards = deck ? [...deck.cards] : [];
             }
         });
         io.to(code).emit('gameUpdated', room);
@@ -97,13 +133,13 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('submitAccusation', ({ roomCode, accusedId, accusedCard }) => {
+    socket.on('submitAccusation', ({ roomCode, accusedId, accusedCardName }) => {
         const code = roomCode.toUpperCase().trim();
         const room = rooms[code];
         if (!room) return;
 
         const killer = room.players.find(p => p.role === 'Killer');
-        const win = (accusedId === killer.id && accusedCard === room.killerCard);
+        const win = (accusedId === killer.id && accusedCardName === room.killerCard.name);
 
         room.players.forEach(p => {
             let ptsToAdd = 0;
@@ -135,4 +171,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Basic Goyendagiri Game is running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Goyendagiri Game is running on port ${PORT}`));
