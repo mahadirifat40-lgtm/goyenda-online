@@ -53,7 +53,10 @@ io.on('connection', (socket) => {
         if (!code || !name) return;
 
         if (!rooms[code]) {
-            rooms[code] = { code, players: [], state: 'lobby', killerCard: null, cluesGiven: [], cluePools: {}, clueIndex: 0 };
+            rooms[code] = { 
+                code, players: [], state: 'lobby', killerCard: null, 
+                cluesGiven: [], cluePools: {}, sentClueTypes: [] // পাঠানো টাইপ ট্র্যাক করার জন্য
+            };
         }
         
         let existingPlayer = rooms[code].players.find(p => p.username.toLowerCase() === name.toLowerCase());
@@ -82,13 +85,14 @@ io.on('connection', (socket) => {
 
         room.state = 'role_reveal';
         room.cluesGiven = [];
-        room.clueIndex = 0;
+        room.sentClueTypes = []; 
         room.killerCard = null;
 
         let shuffledLocs = shuffle([...CLUE_OPTIONS.locations]);
         let shuffledCauses = shuffle([...CLUE_OPTIONS.causes]);
         let shuffledScenarios = shuffle([...CLUE_OPTIONS.scenarios]);
 
+        // ৩টি মূল ক্লু পুল
         room.cluePools = {
             loc: shuffledLocs[0],
             cause: shuffledCauses[0],
@@ -126,27 +130,27 @@ io.on('connection', (socket) => {
         if (room) {
             room.killerCard = card;
             room.state = 'investigation'; 
-            
-            // অটোমেটিক ১ম ক্লু জেনারেট করে ইনভেস্টিগেশন শুরু করা
-            room.clueIndex = 1;
-            room.cluesGiven.push({ label: "📍 স্থান", val: room.cluePools.loc });
             io.to(code).emit('gameUpdated', room);
         }
     });
 
-    socket.on('nextClueRequest', (roomCode) => {
+    // গোয়েন্দার নির্দিষ্ট ক্লু পাঠানোর রিকোয়েস্ট
+    socket.on('sendSpecificClue', ({ roomCode, clueType }) => {
         const code = roomCode.toUpperCase().trim();
         const room = rooms[code];
         if (!room || room.state !== 'investigation') return;
+        if (room.sentClueTypes.includes(clueType)) return; // অলরেডি পাঠানো হলে ইগনোর করবে
 
-        room.clueIndex += 1;
-        if(room.clueIndex === 2) {
-            room.cluesGiven.push({ label: "🧪 মৃত্যুর কারণ", val: room.cluePools.cause });
-        } else if(room.clueIndex === 3) {
-            room.cluesGiven.push({ label: "🧥 ঘটনাস্থল", val: room.cluePools.scene });
-        } else if(room.clueIndex === 4) {
-            room.cluesGiven.push({ label: "🔮 হাতিয়ারের অবয়ব/আইকন", val: room.killerCard.icon });
+        room.sentClueTypes.push(clueType);
+
+        if(clueType === 'loc') {
+            room.cluesGiven.push({ type: 'loc', label: "📍 স্থান", val: room.cluePools.loc });
+        } else if(clueType === 'cause') {
+            room.cluesGiven.push({ type: 'cause', label: "🧪 মৃত্যুর কারণ", val: room.cluePools.cause });
+        } else if(clueType === 'scene') {
+            room.cluesGiven.push({ type: 'scene', label: "🧥 ঘটনাস্থল", val: room.cluePools.scene });
         }
+
         io.to(code).emit('gameUpdated', room);
     });
 
@@ -158,16 +162,16 @@ io.on('connection', (socket) => {
         const killer = room.players.find(p => p.role === 'Killer');
         const win = (accusedId === killer.id && accusedCardName === room.killerCard.name);
 
-        // ডাইনামিক পয়েন্ট লজিক (ক্লু ইনডেক্স অনুযায়ী)
+        // রিলিজ হওয়া ক্লু-র সংখ্যার ওপর ভিত্তি করে ডাইনামিক পয়েন্ট মেকানিজম
+        let releasedCount = room.sentClueTypes.length;
         let earlyBirdPoints = 1;
-        if (room.clueIndex === 1) earlyBirdPoints = 5;
-        else if (room.clueIndex === 2) earlyBirdPoints = 4;
-        else if (room.clueIndex === 3) earlyBirdPoints = 3;
+        if (releasedCount === 0 || releasedCount === 1) earlyBirdPoints = 5; 
+        else if (releasedCount === 2) earlyBirdPoints = 3;
         else earlyBirdPoints = 1;
 
         room.players.forEach(p => {
             if (win) {
-                if (p.id === socket.id) p.points += earlyBirdPoints; // যে সঠিক উত্তর দিয়েছে সে আর্লি বার্ড পয়েন্ট পাবে
+                if (p.id === socket.id) p.points += earlyBirdPoints; 
                 else if (p.role === 'Goyenda') p.points += 2;
                 else if (p.role === 'Suspect') p.points += 1;
             } else {
@@ -191,4 +195,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Among-Us Style Game running on ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Custom Detective Game running on ${PORT}`));
