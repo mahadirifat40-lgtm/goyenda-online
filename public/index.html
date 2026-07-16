@@ -32,7 +32,7 @@
         
         .points-tab { background: rgba(15, 20, 30, 0.85); border: 1px solid rgba(226, 177, 60, 0.25); border-radius: 10px; padding: 10px; margin-bottom: 15px; }
         
-        /* --- BOARD LAYOUT (স্কেচ অনুযায়ী ডিজাইন) --- */
+        /* --- BOARD LAYOUT --- */
         .table-board {
             position: relative;
             background: radial-gradient(circle, rgba(30, 40, 55, 0.4) 0%, rgba(10, 15, 25, 0.9) 100%);
@@ -47,7 +47,6 @@
             overflow: hidden;
         }
 
-        /* মাঝখানের গোয়েন্দা জোন (গোলটেবিল ডিজাইন) */
         .goyenda-center {
             position: absolute;
             width: 130px;
@@ -75,7 +74,6 @@
         .goyenda-center h4 { color: #fff; font-size: 0.95rem; margin-bottom: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .goyenda-center span { font-size: 0.75rem; color: var(--accent-gold); font-weight: bold; }
 
-        /* চারপাশের প্লেয়ারদের গ্রিড লেআউট */
         .players-circle-layout {
             position: absolute;
             width: 100%;
@@ -107,13 +105,11 @@
             background: rgba(226, 177, 60, 0.05);
         }
 
-        /* প্লেয়ারদের অবস্থান বন্টন */
         .player-node-top { grid-area: top; margin: 0 auto; }
         .player-node-left { grid-area: left; margin-top: auto; margin-bottom: auto; }
         .player-node-right { grid-area: right; margin-top: auto; margin-bottom: auto; }
         .player-node-bottom { grid-area: bottom; margin: 0 auto; }
 
-        /* প্লেয়ার ট্যাগ উইথ অবতার */
         .player-header {
             display: flex;
             align-items: center;
@@ -142,7 +138,6 @@
             flex: 1;
         }
 
-        /* ৩টি ভিজ্যুয়াল কার্ড রো */
         .cards-row {
             display: flex;
             gap: 6px;
@@ -150,7 +145,6 @@
             width: 100%;
         }
         
-        /* সম্পূর্ণ কার্ড গেম ভাইব ডিজাইন */
         .mini-card {
             flex: 1;
             aspect-ratio: 2/3;
@@ -178,29 +172,11 @@
             padding: 2px;
             text-align: center;
         }
-        .mini-card-icon {
-            font-size: 0.9rem;
-            margin-bottom: 1px;
-        }
-        .mini-card-name {
-            font-size: 0.62rem;
-            font-weight: bold;
-            color: #e2e8f0;
-            line-height: 1.1;
-            word-break: break-word;
-        }
+        .mini-card-icon { font-size: 0.9rem; margin-bottom: 1px; }
+        .mini-card-name { font-size: 0.62rem; font-weight: bold; color: #e2e8f0; line-height: 1.1; word-break: break-word; }
 
-        /* ক্লু বক্স */
-        .clues-hud {
-            background: rgba(0, 136, 255, 0.08);
-            border-left: 5px solid var(--detective-blue);
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 0.85rem;
-        }
+        .clues-hud { background: rgba(0, 136, 255, 0.08); border-left: 5px solid var(--detective-blue); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; }
         .clues-grid-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 5px; }
-
         .footer-credit { text-align: center; margin-top: 20px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.3); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; }
         .footer-credit span { color: var(--accent-crimson); font-weight: bold; }
     </style>
@@ -210,7 +186,7 @@
 
 <div class="game-container">
     <h1>🩸 Goyendagiri Online 🔍</h1>
-    <div class="subtitle">হত্য রহস্য ও সামাজিক অনুমান খেলা</div>
+    <div class="subtitle">হত্যা রহস্য ও সামাজিক অনুমান খেলা</div>
 
     <!-- LIVE SCOREBOARD -->
     <div id="global-scoreboard" class="points-tab" style="display: none;">
@@ -222,10 +198,8 @@
     <div id="screen-quick-join" class="screen active">
         <label>🕵️‍♂️ আপনার সুন্দর নাম লিখুন</label>
         <input type="text" id="username-input" placeholder="উদা: গোয়েন্দা লালু">
-        
         <label>🔑 রুম কোড (নতুন বা পুরনো)</label>
         <input type="text" id="room-input" placeholder="উদা: DETECTIVE">
-        
         <button class="btn" id="btn-join-room">রুমে প্রবেশ করুন 🚀</button>
     </div>
 
@@ -242,37 +216,34 @@
     <div id="screen-reveal" class="screen" style="text-align: center;">
         <div style="background: rgba(255,255,255,0.03); border: 2px dashed var(--accent-gold); padding: 20px; border-radius: 12px; margin-bottom: 15px;">
             <div style="margin-bottom: 15px;">
-                <!-- ইউজারের ক্যারেক্টার অবতার শো করার গোল উইন্ডো -->
                 <img id="reveal-avatar-img" src="" style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent-gold); background: rgba(255,255,255,0.1); padding: 5px;" alt="Avatar">
             </div>
             <h2 id="my-role-reveal-title" style="color: var(--accent-gold); margin-bottom: 8px;"></h2>
             <p id="my-role-reveal-desc" style="color: var(--muted-gray); font-size: 0.9rem;"></p>
             
-            <!-- খুনি কার্ড সিলেকশন করার জোন -->
             <div id="killer-selection-zone" style="display:none; margin-top: 15px;">
                 <label>🗡️ আপনার হত্যার হাতিয়ার নির্ধারণ করুন (অন্যরা দেখবে না):</label>
                 <div id="killer-cards-options" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:10px;"></div>
             </div>
         </div>
-        <p style="font-size:0.85rem; color:var(--muted-gray);" id="waiting-status-text">খুনির কার্ড সিলেক্ট করার জন্য অপেক্ষা করা হচ্ছে...</p>
+        <p style="font-size:0.85rem; color:var(--muted-gray);" id="waiting-status-text">খুনির হাতিয়ার সিলেক্ট করার জন্য অপেক্ষা করা হচ্ছে...</p>
     </div>
 
-    <!-- SCREEN 4: GOYENDA DASHBOARD (ONLY SEEN BY GOYENDA) -->
+    <!-- SCREEN 4: GOYENDA DASHBOARD -->
     <div id="screen-goyenda-clues" class="screen">
         <h3>🔍 গোয়েন্দা ড্যাশবোর্ড (ক্লু সাজান)</h3>
         <p style="margin: 10px 0;">আসল খুনি: <strong id="intel-killer" style="color:var(--accent-crimson)"></strong> | আসল হাতিয়ার: <strong id="intel-card" style="color:var(--accent-gold)"></strong></p>
         <label>📍 স্থান</label>
-        <select id="clue-1"><option>ড্রয়িং রুম</option><option>পরিত্যক্ত গুদামঘর</option><option>অন্ধকার গলি</option></select>
+        <select id="clue-1"></select>
         <label>🧪 মৃত্যুর কারণ</label>
-        <select id="clue-2"><option>ধারালো অস্ত্র</option><option>শ্বাসরোধ</option><option>বিষপ্রয়োগ</option></select>
+        <select id="clue-2"></select>
         <label>🧥 ঘটনাস্থল</label>
-        <select id="clue-3"><option>ধস্তাধস্তি</option><option>একদম পরিষ্কার</option><option>রক্তের ছিট ফোঁটা</option></select>
+        <select id="clue-3"></select>
         <button class="btn" id="btn-send-clues">ক্লু প্রেরণ করুন 📡</button>
     </div>
 
-    <!-- SCREEN 5: INVESTIGATION BOARD (THE CIRCULAR BOARD SCREEN) -->
+    <!-- SCREEN 5: INVESTIGATION BOARD -->
     <div id="screen-investigation" class="screen">
-        <!-- ক্লু হাব -->
         <div class="clues-hud">
             <div style="font-weight: bold; color: var(--detective-blue);">🕵️‍♂️ আলামত বা ক্লু সমূহ:</div>
             <div id="live-clues-hud-box" class="clues-grid-hud">
@@ -282,16 +253,12 @@
             </div>
         </div>
 
-        <!-- বৃত্তাকার বোর্ড লেআউট -->
         <div class="table-board" id="game-table-board">
-            <!-- Center Goyenda Spot -->
             <div class="goyenda-center">
                 <img id="board-goyenda-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=goyenda-boss" alt="Goyenda">
                 <h4 id="board-goyenda-name">তদন্তকারী</h4>
                 <span>গোয়েন্দা 🔍</span>
             </div>
-
-            <!-- Players surrounding grid -->
             <div class="players-circle-layout" id="players-circle-container"></div>
         </div>
 
@@ -328,13 +295,12 @@
     let currentRoom = null, loggedInUser = null;
     let myRoleData = null; 
 
-    // --- Join Game Logic ---
     document.getElementById('btn-join-room').addEventListener('click', () => {
         const username = document.getElementById('username-input').value.trim();
         const roomCode = document.getElementById('room-input').value.trim();
 
         if(!username || !roomCode) {
-            alert("দয়া করে আপনার নাম এবং রুম কোড দুটোই লিখুন!");
+            alert("দয়া করে নাম এবং রুম কোড দুটোই লিখুন!");
             return;
         }
 
@@ -346,28 +312,18 @@
         document.getElementById('global-scoreboard').style.display = 'block';
     });
 
-    function leaveRoom() {
-        location.reload();
-    }
+    function leaveRoom() { location.reload(); }
 
-    // --- Socket Listeners ---
     socket.on('roomUpdated', (room) => {
         document.getElementById('display-room-code').innerText = room.code;
-        
-        // স্কোরবোর্ড
         document.getElementById('points-list-box').innerHTML = room.players.map(p => `
             <div style="background:rgba(255,255,255,0.05); padding:4px; border-radius:4px; font-size:0.75rem; text-align:center;">
                 👤 ${p.username}: <strong>${p.points} P</strong>
             </div>
         `).join('');
         
-        // ওয়েটিং লিস্ট
         const list = document.getElementById('lobby-player-list');
-        list.innerHTML = room.players.map(p => `
-            <div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:6px; border-radius:6px;">
-                👤 ${p.username}
-            </div>
-        `).join('');
+        list.innerHTML = room.players.map(p => `<div style="padding:10px; background:rgba(255,255,255,0.05); margin-bottom:6px; border-radius:6px;">👤 ${p.username}</div>`).join('');
         
         if(room.players[0].username === loggedInUser && room.players.length >= 3) {
             document.getElementById('btn-start').style.display = 'block';
@@ -393,6 +349,10 @@
                 const killer = room.players.find(p => p.role === 'Killer');
                 document.getElementById('intel-killer').innerText = killer.username;
                 document.getElementById('intel-card').innerText = `${room.killerCard.icon} ${room.killerCard.name}`;
+
+                if(room.cluePools) {
+                    injectDynamicClues(room.cluePools);
+                }
             } else {
                 switchScreen('screen-reveal');
                 document.getElementById('my-role-reveal-title').innerText = "🔍 ক্লু রেডি হচ্ছে...";
@@ -411,7 +371,6 @@
         const killerZone = document.getElementById('killer-selection-zone');
         const avatarEl = document.getElementById('reveal-avatar-img');
 
-        // ইউজারের অবতার ইমেজ সেট করা
         avatarEl.src = me.avatar || "https://api.dicebear.com/7.x/adventurer/svg?seed=suspect";
 
         if(me.role === 'Goyenda') {
@@ -426,12 +385,22 @@
             killerZone.style.display = 'block';
             
             const options = document.getElementById('killer-cards-options');
-            // খুনির কার্ডগুলোতেও সুন্দর আইকন দেখাবে
-            options.innerHTML = me.cards.map(c => `
-                <button class="btn" style="margin-top:5px; background:var(--accent-crimson); font-size:0.85rem;" onclick="socket.emit('killerPickCard', {roomCode:currentRoom, card: ${JSON.stringify(c)}})">
-                    ${c.icon} ${c.name}
-                </button>
-            `).join('');
+            options.innerHTML = ''; 
+
+            // 🛡️ সুরক্ষিত বাটন ক্লিক ইভেন্ট লিসেনার (কোনো কোটেশন এরর হবে না)
+            me.cards.forEach((c) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.style.marginTop = '5px';
+                btn.style.background = 'var(--accent-crimson)';
+                btn.style.fontSize = '0.85rem';
+                btn.innerHTML = `${c.icon} ${c.name}`;
+                
+                btn.onclick = function() {
+                    socket.emit('killerPickCard', { roomCode: currentRoom, card: c });
+                };
+                options.appendChild(btn);
+            });
         } else {
             titleEl.innerText = '👤 সন্দেহভাজন';
             titleEl.style.color = '#fff';
@@ -440,7 +409,16 @@
         }
     }
 
-    // --- গোল টেবিল আর্কিটেকচার (প্রতিটি কার্ডে ছবি ও আইকন সহ) ---
+    function injectDynamicClues(pools) {
+        const select1 = document.getElementById('clue-1');
+        const select2 = document.getElementById('clue-2');
+        const select3 = document.getElementById('clue-3');
+
+        select1.innerHTML = pools.locations.map(loc => `<option value="${loc}">${loc}</option>`).join('');
+        select2.innerHTML = pools.causes.map(cause => `<option value="${cause}">${cause}</option>`).join('');
+        select3.innerHTML = pools.scenarios.map(sc => `<option value="${sc}">${sc}</option>`).join('');
+    }
+
     function renderInvestigationBoard(room) {
         if (room.clues && room.clues.length > 0) {
             document.getElementById('live-clues-hud-box').innerHTML = room.clues.map(c => `
@@ -464,8 +442,6 @@
             const posClass = `player-node-${positions[idx % 4]}`;
             const isMe = (p.username === loggedInUser) ? 'active-me' : '';
             
-            // ৩টি মিনি ভিজ্যুয়াল কার্ড তৈরি (যা সবাই দেখতে পাবে)
-            // কার্ডের ভেতরে ছবি (img), আইকন (icon), এবং নাম (name) জেনারেট হচ্ছে
             const cardsHtml = p.cards.map(card => `
                 <div class="mini-card">
                     <img class="mini-card-img" src="${card.img}" alt="${card.name}">
@@ -488,10 +464,7 @@
             container.insertAdjacentHTML('beforeend', playerNodeHtml);
         });
 
-        // ভোটিং আপডেট
-        document.getElementById('vote-killer-select').innerHTML = suspectPlayers.map(p => `
-            <option value="${p.id}">${p.username} (${p.assignedSuspectName})</option>
-        `).join('');
+        document.getElementById('vote-killer-select').innerHTML = suspectPlayers.map(p => `<option value="${p.id}">${p.username} (${p.assignedSuspectName})</option>`).join('');
         
         let allCardsHtml = "";
         suspectPlayers.forEach(p => {
@@ -502,7 +475,6 @@
         document.getElementById('vote-card-select').innerHTML = allCardsHtml;
     }
 
-    // গোয়েন্দার ক্লু পাঠানো
     document.getElementById('btn-send-clues').addEventListener('click', () => {
         const clues = [
             { label: '📍 স্থান', val: document.getElementById('clue-1').value },
