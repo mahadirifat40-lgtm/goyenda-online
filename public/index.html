@@ -26,19 +26,16 @@
         .screen.active { display: block; }
         .btn { background: linear-gradient(135deg, var(--accent-crimson), #b31c28); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1rem; transition: transform 0.2s; }
         .btn:hover { transform: scale(1.02); }
-        .btn-secondary { background: linear-gradient(135deg, #4a5568, #2d3748); }
         input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background-color: rgba(20, 24, 33, 0.9); color: white; margin-bottom: 15px; font-size: 1rem; }
         label { color: var(--accent-gold); font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 6px; }
         
         .points-tab { background: rgba(15, 20, 30, 0.85); border: 1px solid rgba(226, 177, 60, 0.25); border-radius: 10px; padding: 10px; margin-bottom: 15px; }
         
-        /* --- CHAT BOX BOX STYLE --- */
         .chat-panel { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; margin-top: 15px; }
         .chat-logs { height: 120px; overflow-y: auto; font-size: 0.85rem; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; padding-right: 5px; }
         .chat-msg { background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; width: fit-content; max-width: 90%; }
         .chat-msg span { color: var(--accent-gold); font-weight: bold; margin-right: 5px; }
 
-        /* --- BOARD GRID --- */
         .table-board {
             position: relative; background: radial-gradient(circle, rgba(30, 40, 55, 0.4) 0%, rgba(10, 15, 25, 0.9) 100%);
             border: 2px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 20px; min-height: 480px;
@@ -70,8 +67,11 @@
         .mini-card-name { font-size: 0.58rem; color: #e2e8f0; font-weight: bold; padding: 1px; }
 
         .clues-hud { background: rgba(0, 136, 255, 0.08); border-left: 5px solid var(--detective-blue); padding: 12px; border-radius: 6px; margin-bottom: 12px; }
-        .clues-grid-hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 5px; font-size: 0.8rem; }
+        .clues-grid-hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 5px; font-size: 0.8rem; }
         .clue-tag { background: rgba(255,255,255,0.05); padding: 6px; border-radius: 4px; border: 1px dashed rgba(255,255,255,0.1); }
+        
+        /* গোয়েন্দা কন্ট্রোল জোন */
+        .goyenda-control-zone { display: flex; gap: 8px; align-items: center; width: 100%; margin-top: 5px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 6px; }
     </style>
     <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -79,7 +79,7 @@
 
 <div class="game-container">
     <h1>🩸 Among Us: Goyendagiri 🔍</h1>
-    <div class="subtitle">ক্লু রিলিজ ও লাইভ চ্যাটিং স্পেশাল সংস্করণ</div>
+    <div class="subtitle">ম্যানুয়াল ৩-ক্লু সিলেক্টর সংস্করণ</div>
 
     <div id="global-scoreboard" class="points-tab" style="display: none;">
         <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 4px; font-size: 0.8rem;">📊 লাইভ স্কোরবোর্ড</div>
@@ -115,13 +115,22 @@
         <p id="waiting-status-text" style="font-size:0.85rem; margin-top:15px; color:var(--muted-gray);">খুনির হাতিয়ার সিলেক্ট করার অপেক্ষা করা হচ্ছে...</p>
     </div>
 
-    <!-- SCREEN 4: MAIN INVESTIGATION BOARD & CHAT -->
+    <!-- SCREEN 4: MAIN INVESTIGATION BOARD -->
     <div id="screen-investigation" class="screen">
-        <!-- CLUE BAR -->
+        <!-- CLUE BAR (WITH DETECTIVE MANUAL CONTROL) -->
         <div class="clues-hud">
-            <div style="display:flex; justify-content:between; align-items:center; width:100%;">
-                <span style="font-weight: bold; color: var(--detective-blue);">📢 আলামত বোর্ড (ক্লু স্তর: <span id="hud-clue-level" style="color:var(--accent-gold)">1</span>/4)</span>
-                <button class="btn" id="btn-goyenda-next-clue" style="display:none; width:auto; padding:4px 10px; margin:0 0 0 auto; font-size:0.75rem; background:var(--detective-blue);">পরবর্তী ক্লু পাঠান 📡</button>
+            <div style="display:flex; flex-direction:column; width:100%;">
+                <span style="font-weight: bold; color: var(--detective-blue); font-size: 0.9rem;">📢 আলামত বোর্ড (রিলিজড ক্লু: <span id="hud-clue-level" style="color:var(--accent-gold)">0</span>/3)</span>
+                
+                <!-- গোয়েন্দা প্যানেল: শুধুমাত্র গোয়েন্দা দেখবে -->
+                <div id="goyenda-manual-panel" class="goyenda-control-zone" style="display:none;">
+                    <select id="goyenda-clue-select" style="margin:0; padding:6px; font-size:0.8rem; flex:1;">
+                        <option value="loc">📍 স্থান রিলিজ করুন</option>
+                        <option value="cause">🧪 মৃত্যুর কারণ রিলিজ করুন</option>
+                        <option value="scene">🧥 ঘটনাস্থল রিলিজ করুন</option>
+                    </select>
+                    <button class="btn" id="btn-goyenda-send-chosen" style="margin:0; width:auto; padding:6px 12px; font-size:0.8rem; background:var(--detective-blue);">ক্লু পাঠান 📡</button>
+                </div>
             </div>
             <div id="live-clues-hud-box" class="clues-grid-hud"></div>
         </div>
@@ -135,9 +144,9 @@
             <div class="players-circle-layout" id="players-circle-container"></div>
         </div>
 
-        <!-- ACCUSATION / VOTING PANEL -->
+        <!-- ACCUSATION PANEL -->
         <div style="background:rgba(255,51,68,0.05); border:1px solid rgba(255,51,68,0.2); padding:12px; border-radius:10px;">
-            <h4 style="color:var(--accent-crimson); font-size:0.9rem; margin-bottom:8px;">⚖️ চূড়ান্ত রায় (সঠিক হলে সর্বোচ্চ ৫ পয়েন্ট!)</h4>
+            <h4 style="color:var(--accent-crimson); font-size:0.9rem; margin-bottom:8px;">⚖️ চূড়ান্ত রায় (কম ক্লু-তে অনুমান করলে বোনাস পয়েন্ট!)</h4>
             <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px;">
                 <select id="vote-killer-select" style="margin:0;"></select>
                 <select id="vote-card-select" style="margin:0;"></select>
@@ -145,7 +154,7 @@
             </div>
         </div>
 
-        <!-- AMONG US TYPE MESSAGING SYSTEM -->
+        <!-- CHAT BOX -->
         <div class="chat-panel">
             <div class="chat-logs" id="chat-logs-container"></div>
             <div style="display:flex; gap:6px;">
@@ -208,15 +217,16 @@
         } else if (room.state === 'investigation') {
             switchScreen('screen-investigation');
             
-            // গোয়েন্দা হলে "পরবর্তী ক্লু" বাটন শো করানো এবং ম্যাক্স ৪ টা পর্যন্ত লিমিট রাখা
-            const nextClueBtn = document.getElementById('btn-goyenda-next-clue');
-            if(me.role === 'Goyenda' && room.clueIndex < 4) {
-                nextClueBtn.style.display = 'block';
+            // গোয়েন্দা ম্যানুয়াল প্যানেল শো/হাইড লজিক
+            const goyendaPanel = document.getElementById('goyenda-manual-panel');
+            if(me.role === 'Goyenda') {
+                goyendaPanel.style.display = 'flex';
+                updateGoyendaDropdown(room.sentClueTypes);
             } else {
-                nextClueBtn.style.display = 'none';
+                goyendaPanel.style.display = 'none';
             }
             
-            document.getElementById('hud-clue-level').innerText = room.clueIndex;
+            document.getElementById('hud-clue-level').innerText = room.sentClueTypes.length;
             renderInvestigationBoard(room);
         }
     });
@@ -230,12 +240,12 @@
         if(me.role === 'Goyenda') {
             titleEl.innerText = '🔍 প্রধান গোয়েন্দা';
             titleEl.style.color = 'var(--detective-blue)';
-            descEl.innerText = "আপনি ক্রাইম ব্রাঞ্চের ইনভেস্টিগেটর। খুনি হাতিয়ার সিলেক্ট করলেই গেম বোর্ডে লাইভ প্রথম ক্লু চলে আসবে।";
+            descEl.innerText = "আপনি ক্রাইম ব্রাঞ্চের ইনভেস্টিগেটর। আপনার ইচ্ছামত ড্রপডাউন থেকে সিলেক্ট করে প্লেয়ারদের ক্লু রিলিজ করুন।";
             killerZone.style.display = 'none';
         } else if (me.role === 'Killer') {
             titleEl.innerText = '🔪 আপনি আসল খুনি';
             titleEl.style.color = 'var(--accent-crimson)';
-            descEl.innerText = "আপনার হাতের ৩টি কার্ডের মধ্যে যেকোনো একটি কার্ড সিলেক্ট করে আপনার ক্রাইম ওয়েপন কনফার্ম করুন:";
+            descEl.innerText = "আপনার হাতের যেকোনো একটি কার্ড সিলেক্ট করে ক্রাইম ওয়েপন কনফার্ম করুন:";
             killerZone.style.display = 'block';
             
             const options = document.getElementById('killer-cards-options');
@@ -250,30 +260,59 @@
         } else {
             titleEl.innerText = '👤 সন্দেহভাজন নাগরিক';
             titleEl.style.color = '#fff';
-            descEl.innerText = `আপনার নাম: "${me.assignedSuspectName}"। আপনি নির্দোষ। গোয়েন্দার ক্লু অনুসরণ করুন এবং চ্যাট বক্সে আলোচনা করে খুনি সনাক্ত করুন।`;
+            descEl.innerText = `আপনার নাম: "${me.assignedSuspectName}"। আপনি নির্দোষ। গোয়েন্দার দেওয়া আলামত লক্ষ্য করুন।`;
             killerZone.style.display = 'none';
         }
     }
 
-    document.getElementById('btn-goyenda-next-clue').addEventListener('click', () => {
-        socket.emit('nextClueRequest', currentRoom);
+    // গোয়েন্দার ড্রপডাউন ডাইনামিক ফিল্টার (যেটা পাঠানো হয়েছে সেটা রিমুভ হবে)
+    function updateGoyendaDropdown(sentTypes) {
+        const select = document.getElementById('goyenda-clue-select');
+        select.innerHTML = '';
+        
+        const options = [
+            { val: 'loc', text: '📍 স্থান রিলিজ করুন' },
+            { val: 'cause', text: '🧪 মৃত্যুর কারণ রিলিজ করুন' },
+            { val: 'scene', text: '🧥 ঘটনাস্থল রিলিজ করুন' }
+        ];
+
+        let availableOptions = options.filter(o => !sentTypes.includes(o.val));
+        
+        if (availableOptions.length === 0) {
+            select.innerHTML = `<option value="none">সব ক্লু পাঠানো শেষ 📡</option>`;
+            document.getElementById('btn-goyenda-send-chosen').disabled = true;
+        } else {
+            document.getElementById('btn-goyenda-send-chosen').disabled = false;
+            availableOptions.forEach(o => {
+                select.insertAdjacentHTML('beforeend', `<option value="${o.val}">${o.text}</option>`);
+            });
+        }
+    }
+
+    // ক্লু সেন্ড বাটন অ্যাকশন
+    document.getElementById('btn-goyenda-send-chosen').addEventListener('click', () => {
+        const clueType = document.getElementById('goyenda-clue-select').value;
+        if(clueType && clueType !== 'none') {
+            socket.emit('sendSpecificClue', { roomCode: currentRoom, clueType });
+        }
     });
 
     function renderInvestigationBoard(room) {
-        // ক্লু ডিসপ্লে রেন্ডার
         const clueBox = document.getElementById('live-clues-hud-box');
-        clueBox.innerHTML = room.cluesGiven.map(c => `
-            <div class="clue-tag"><strong>${c.label}:</strong> <span style="color:var(--accent-gold)">${c.val}</span></div>
-        `).join('');
+        if (room.cluesGiven.length === 0) {
+            clueBox.innerHTML = `<div style="color:var(--muted-gray); grid-column: 1 / -1; font-style: italic; font-size:0.75rem;">গোয়েন্দা এখনো কোনো ক্লু রিলিজ করেননি। আলোচনা শুরু করুন...</div>`;
+        } else {
+            clueBox.innerHTML = room.cluesGiven.map(c => `
+                <div class="clue-tag"><strong>${c.label}:</strong> <span style="color:var(--accent-gold)">${c.val}</span></div>
+            `).join('');
+        }
 
-        // গোয়েন্দা মডিউল সেন্টার
         const goyenda = room.players.find(p => p.role === 'Goyenda');
         if(goyenda) {
             document.getElementById('board-goyenda-name').innerText = goyenda.username;
             document.getElementById('board-goyenda-img').src = goyenda.avatar;
         }
 
-        // প্লেয়ার সার্কেল ও কার্ডস গ্রিড
         const suspects = room.players.filter(p => p.role !== 'Goyenda');
         const container = document.getElementById('players-circle-container');
         container.innerHTML = '';
@@ -301,7 +340,6 @@
             `);
         });
 
-        // ভোটিং লিস্ট আপডেট
         document.getElementById('vote-killer-select').innerHTML = suspects.map(p => `<option value="${p.id}">${p.username}</option>`).join('');
         let allOptions = "";
         suspects.forEach(p => p.cards.forEach(c => {
@@ -310,7 +348,6 @@
         document.getElementById('vote-card-select').innerHTML = allOptions;
     }
 
-    // চ্যাট সিস্টেম ও মেসেজ এমিট
     document.getElementById('btn-send-chat').addEventListener('click', sendChatMessageAction);
     document.getElementById('chat-input-box').addEventListener('keypress', (e) => {
         if(e.key === 'Enter') sendChatMessageAction();
@@ -330,7 +367,7 @@
         logs.insertAdjacentHTML('beforeend', `
             <div class="chat-msg"><span>【${sender}】:</span>${msg}</div>
         `);
-        logs.scrollTop = logs.scrollHeight; // স্ক্রল অটোমেটিক নিচে নামানোর জন্য
+        logs.scrollTop = logs.scrollHeight;
     });
 
     document.getElementById('btn-submit-vote').addEventListener('click', () => {
@@ -345,7 +382,7 @@
         title.innerText = win ? "🏆 কেস সলভড!" : "💀 খুনি পলায়ন করেছে!";
         title.style.color = win ? "#48bb78" : "var(--accent-crimson)";
         
-        let victoryText = win ? `<p style="color:var(--accent-gold)">🎉 <strong>${detectorUser}</strong> সঠিক অনুমান করে রাউন্ডে <strong>+${ptsEarned} পয়েন্ট</strong> লুফে নিয়েছেন!</p>` : '';
+        let victoryText = win ? `<p style="color:var(--accent-gold)">🎉 <strong>${detectorUser}</strong> সঠিক অনুমান করে রাউন্ডে <strong>+${ptsEarned} পয়েন্ট</strong> পেয়েছেন!</p>` : '';
 
         document.getElementById('end-details').innerHTML = `
             ${victoryText}
