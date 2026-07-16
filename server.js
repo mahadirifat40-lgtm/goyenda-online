@@ -11,9 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let rooms = {};
 
-// --- 🧠 Dynamic AI-Style Generator Pools ---
-
-// ১৫+ গোয়েন্দা ও সন্দেহভাজন ক্যারেক্টার পুল (প্রতি রাউন্ডে ৪টি র্যান্ডমলি সিলেক্ট হবে)
+// --- 🧠 AI-Style Dynamic Generator Pools ---
 const SUSPECT_NAMES = [
     { name: "ফেলুদা ফ্যান", seed: "feluda" },
     { name: "ব্যোমকেশ ভক্ত", seed: "byomkesh" },
@@ -25,11 +23,10 @@ const SUSPECT_NAMES = [
     { name: "টিনটিন লাভার", seed: "tintin" },
     { name: "শেরিফ সাহেব", seed: "sheriff" },
     { name: "রহস্যময়ী তনয়া", seed: "tonoya" },
-    { name: "প্রফেসর শঙ্কু অ্যাসিস্ট্যান্ট", seed: "shonku" },
+    { name: "প্রробнее শঙ্কু অ্যাসিস্ট্যান্ট", seed: "shonku" },
     { name: "ডিজিটাল হ্যাকার", seed: "hacker" }
 ];
 
-// ৩০+ বিচিত্র ও রোমাঞ্চকর মার্ডার ওয়েপন (হাতিয়ার) পুল
 const WEAPON_POOL = [
     { name: "ডিজিটাল পিস্তল", icon: "🔫", img: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=150&q=80" },
     { name: "টেবিল ল্যাম্পের তার", icon: "🔌", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=150&q=80" },
@@ -37,7 +34,7 @@ const WEAPON_POOL = [
     { name: "অ্যান্টিক খঞ্জর", icon: "🗡️", img: "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=150&q=80" },
     { name: "সায়ানাইড ক্যাপসুল", icon: "💊", img: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=150&q=80" },
     { name: "পকেট ঘড়ির চেইন", icon: "⛓️", img: "https://images.unsplash.com/photo-1509048191080-d2984bad6ae5?w=150&q=80" },
-    { name: "ক্রাচের তলোয়ার", icon: "⚔️", img: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=150&q=80" },
+    { name: "ক্রাচের تলোয়ার", icon: "⚔️", img: "https://images.unsplash.com/photo-1589656966895-2f33e7653819?w=150&q=80" },
     { name: "ক্লোরোফর্ম রুমাল", icon: "🧼", img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=150&q=80" },
     { name: "ভারী কাঠের মূর্তি", icon: "🗿", img: "https://images.unsplash.com/photo-1518929458119-e5bf444c30f4?w=150&q=80" },
     { name: "সাইলেন্সার রিভলভার", icon: "🔫", img: "https://images.unsplash.com/photo-1534353436294-0dbd4bdac845?w=150&q=80" },
@@ -47,11 +44,10 @@ const WEAPON_POOL = [
     { name: "জং ধরা পেরেক", icon: "📌", img: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=150&q=80" },
     { name: "হিমায়িত বরফের টুকরো", icon: "❄️", img: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=150&q=80" },
     { name: "মেকআপ কিটের সুঁই", icon: "🪡", img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=150&q=80" },
-    { name: "প্রাচীন সোনার মুদ্রা (ভারী)", icon: "🪙", img: "https://images.unsplash.com/photo-1621972750749-0fbb1abb7736?w=150&q=80" },
+    { name: "প্রাচীন সোনার মুদ্রা", icon: "🪙", img: "https://images.unsplash.com/photo-1621972750749-0fbb1abb7736?w=150&q=80" },
     { name: "অজানা ভেষজ তরল", icon: "🧪", img: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=150&q=80" }
 ];
 
-// ডাইনামিক ক্লু অপশন (প্রতিবার গোয়েন্দার জন্য নতুন নতুন ড্রপডাউন অপশন আসবে)
 const CLUE_OPTIONS = {
     locations: [
         ["ড্রয়িং রুম", "পরিত্যক্ত গুদামঘর", "অন্ধকার গলি"],
@@ -75,20 +71,17 @@ function shuffle(array) {
     return array.sort(() => Math.random() - 0.5); 
 }
 
-// প্রতি রাউন্ডের জন্য ইউনিক ক্যারেক্টার ডেক জেনারেট করার এআই ফাংশন
 function generateDynamicDecks(playerCount) {
     let shuffledSuspects = shuffle([...SUSPECT_NAMES]);
     let shuffledWeapons = shuffle([...WEAPON_POOL]);
-    
     let decks = [];
-    // প্রতি প্লেয়ারের জন্য ১টি সন্দেহভাজন রোল এবং ৩টি সম্পূর্ণ ইউনিক হাতিয়ার কার্ড সেট করা
     for(let i = 0; i < playerCount; i++) {
         let suspect = shuffledSuspects[i] || { name: `সন্দেহভাজন ${i+1}`, seed: `avatar${i}` };
         let cards = [
             shuffledWeapons[i * 3],
             shuffledWeapons[i * 3 + 1],
             shuffledWeapons[i * 3 + 2]
-        ].filter(Boolean); // কোনো কারণে নাল বা আনডিফাইন্ড থাকলে ফিল্টার করবে
+        ].filter(Boolean);
 
         decks.push({
             suspect: suspect.name,
@@ -134,7 +127,6 @@ io.on('connection', (socket) => {
         room.clues = [];
         room.killerCard = null;
 
-        // এই রাউন্ডের জন্য একদম ইউনিক ক্লু অপশন সেট করা
         room.cluePools = {
             locations: shuffle([...CLUE_OPTIONS.locations])[0],
             causes: shuffle([...CLUE_OPTIONS.causes])[0],
@@ -145,7 +137,6 @@ io.on('connection', (socket) => {
         let goyenda = shuffledPlayers[0];
         let killer = shuffledPlayers[1];
         
-        // ডাইনামিক ডেক জেনারেশন
         let dynamicDecks = generateDynamicDecks(room.players.length);
         let deckIndex = 0;
 
